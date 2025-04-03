@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: Markdown",
 ]
 requires-python = ">=3.10"
-dependencies = ['ipython>=6', "nbformat>=5"]
+dependencies = ["ipython>=6", "nbconvert>=7", "nbformat>=5"]
 
 [project.urls]
 Documentation = "https://daizutabi.github.io/nbstore/"
@@ -32,6 +32,7 @@ Changelog = "https://github.com/daizutabi/nbstore/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
+  "ipykernel>=6.29",
   "cairosvg>=2.7",
   "hvplot>=0.11",
   "matplotlib>=3.10",
@@ -42,6 +43,8 @@ dev = [
   "pytest-cov",
   "pytest-randomly",
   "pytest-xdist>=3.6",
+  "pyarrow>=19",
+  "pillow>=11",
   "ruff>=0.11",
   "seaborn>=0.13",
 ]
@@ -62,10 +65,10 @@ skip_covered = true
 [tool.ruff]
 line-length = 88
 target-version = "py310"
-exclude = ["tests/examples/*.py", "example/*.py"]
 
 [tool.ruff.lint]
 select = ["ALL"]
+unfixable = ["F401"]
 ignore = [
   "A005",
   "ANN001",
@@ -86,20 +89,10 @@ ignore = [
   "SIM102",
   "SLF001",
 ]
-unfixable = ["F401"]
 
 [tool.ruff.lint.per-file-ignores]
-"**{tests,notebooks}/*" = [
-  "ANN",
-  "ARG",
-  "D",
-  "FBT",
-  "NPY",
-  "PD",
-  "PLR",
-  "RUF",
-  "S",
-]
+"**/tests/*" = ["ANN", "ARG", "D", "FBT", "NPY", "PD", "PLR", "RUF", "S"]
+"**/notebooks/*" = ["ERA001", "T201"]
 
 [tool.pyright]
 include = ["src", "tests"]

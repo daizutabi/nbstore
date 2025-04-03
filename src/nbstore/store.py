@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
 from nbformat import NotebookNode
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass
 class Store:
-    path: list[Path] = field(default_factory=lambda: [Path()])
+    notebook_dir: Path
     notebooks: dict[Path, NotebookNode] = field(default_factory=dict, init=False)
     st_mtime: dict[Path, float] = field(default_factory=dict, init=False)
     current_path: Path | None = field(default=None, init=False)
@@ -18,11 +21,10 @@ class Store:
     def _read(self, abs_path: Path) -> NotebookNode:
         mtime = abs_path.stat().st_mtime
 
-        if (nb := self.notebooks.get(abs_path)) and self.st_mtime[abs_path] == mtime:
-            return nb
+        if (nb_ := self.notebooks.get(abs_path)) and self.st_mtime[abs_path] == mtime:
+            return nb_
 
-        with abs_path.open(encoding="utf-8") as f:
-            nb = nbformat.reader.reads(f.read())
+        nb: NotebookNode = nbformat.read(abs_path, as_version=4)  # type: ignore
 
         self.notebooks[abs_path] = nb
         self.st_mtime[abs_path] = mtime
@@ -37,20 +39,16 @@ class Store:
         if not url and self.current_path:
             return self.current_path
 
-        for parent in self.path:
-            abs_path = (parent / url).absolute()
-            if abs_path.exists():
-                self.current_path = abs_path
-                return abs_path
+        abs_path = (self.notebook_dir / url).absolute()
+
+        if abs_path.exists():
+            self.current_path = abs_path
+            return abs_path
 
         msg = "Unknown path."
         raise ValueError(msg)
 
-    def set_notebooks_dir(self, path: list[Path]) -> None:
-        self.path = path
-        self.notebooks.clear()
-
-    def get_notebook(self, url: str) -> dict:
+    def get_notebook(self, url: str) -> NotebookNode:
         abs_path = self._get_abs_path(url)
         return self._read(abs_path)
 
@@ -92,8 +90,14 @@ class Store:
         nb = self.get_notebook(url)
         return get_language(nb)
 
+    def execute(self, url: str) -> NotebookNode:
+        nb = self.get_notebook(url)
+        ep = ExecutePreprocessor(timeout=600)
+        ep.preprocess(nb)
+        return nb
 
-def get_cell(nb: dict, identifier: str) -> dict[str, Any]:
+
+def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
     for cell in nb["cells"]:
         source: str = cell["source"]
         if source.startswith(f"# #{identifier}\n"):
@@ -103,14 +107,14 @@ def get_cell(nb: dict, identifier: str) -> dict[str, Any]:
     raise ValueError(msg)
 
 
-def get_source(nb: dict, identifier: str) -> str:
+def get_source(nb: NotebookNode, identifier: str) -> str:
     if source := get_cell(nb, identifier).get("source", ""):
         source = "\n".join(source.split("\n")[1:])
 
     return source
 
 
-def get_outputs(nb: dict, identifier: str) -> list:
+def get_outputs(nb: NotebookNode, identifier: str) -> list:
     return get_cell(nb, identifier).get("outputs", [])
 
 
