@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nbstore"
+version = "0.1.0"
+description = "Jupyter notebook store"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
+keywords = ["jupyter", "notebook"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
+  "Topic :: Text Processing :: Markup :: Markdown",
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Documentation = "https://daizutabi.github.io/nbstore/"
+Source = "https://github.com/daizutabi/nbstore"
+Issues = "https://github.com/daizutabi/nbstore/issues"
+Changelog = "https://github.com/daizutabi/nbstore/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = ["pytest-clarity", "pytest-cov", "pytest-randomly"]
+docs = ["mkapi", "mkdocs-material"]
+
+[tool.pytest.ini_options]
+testpaths = ["src", "tests"]
+addopts = ["--doctest-modules", "--cov=nbstore", "--cov-report=lcov:lcov.info"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "except ImportError",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
+skip_covered = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+exclude = ["tests/examples/*.py", "example/*.py"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+unfixable = ["F401"]
+ignore = [
+  "A005",
+  "ANN002",
+  "ANN003",
+  "ARG001",
+  "ARG002",
+  "D",
+  "D105",
+  "D203",
+  "D213",
+  "FBT001",
+  "FBT002",
+  "PERF401",
+  "PGH003",
+  "PLR2004",
+  "SIM102",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN", "ARG", "D", "FBT", "PLR", "RUF", "S"]
+
+[tool.pyright]
+include = ["src", "tests"]
+strictDictionaryInference = true
+strictListInference = true
+strictSetInference = true
