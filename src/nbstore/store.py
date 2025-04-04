@@ -1,22 +1,27 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import nbformat
 
-if TYPE_CHECKING:
-    from pathlib import Path
+from .image import create_image_file
 
+if TYPE_CHECKING:
     from nbformat import NotebookNode
 
 
-@dataclass
 class Store:
     notebook_dir: Path
-    notebooks: dict[Path, NotebookNode] = field(default_factory=dict, init=False)
-    st_mtime: dict[Path, float] = field(default_factory=dict, init=False)
-    current_path: Path | None = field(default=None, init=False)
+    notebooks: dict[Path, NotebookNode]
+    st_mtime: dict[Path, float]
+    current_path: Path | None
+
+    def __init__(self, notebook_dir: Path | str) -> None:
+        self.notebook_dir = Path(notebook_dir)
+        self.notebooks = {}
+        self.st_mtime = {}
+        self.current_path = None
 
     def _read(self, abs_path: Path) -> NotebookNode:
         mtime = abs_path.stat().st_mtime
@@ -97,6 +102,17 @@ class Store:
         ep = ExecutePreprocessor(timeout=600)
         ep.preprocess(nb)
         return nb
+
+    def create_image_file(
+        self,
+        url: str,
+        identifier: str,
+        filename: Path | str,
+        *,
+        delete: bool = False,
+    ) -> Path | None:
+        data = self.get_data(url, identifier)
+        return create_image_file(data, filename, delete=delete)
 
 
 def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:

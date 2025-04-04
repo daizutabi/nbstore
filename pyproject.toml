@@ -55,11 +55,7 @@ testpaths = ["src", "tests"]
 addopts = ["--doctest-modules", "--cov=nbstore", "--cov-report=lcov:lcov.info"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "except ImportError",
-  "if TYPE_CHECKING:",
-  "raise NotImplementedError",
-]
+exclude_lines = ["if TYPE_CHECKING:", "no cov", "raise NotImplementedError"]
 skip_covered = true
 
 [tool.ruff]

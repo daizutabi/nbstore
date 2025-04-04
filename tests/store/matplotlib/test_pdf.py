@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from nbstore.store import Store
@@ -43,11 +41,7 @@ def test_data(store: Store):
 
 
 def test_image(store: Store):
-    from nbstore.image import create_image_file
-
-    data = store.get_data("pdf.ipynb", "fig:pdf")
-    file = create_image_file(data)
+    file = store.create_image_file("pdf.ipynb", "fig:pdf", "a", delete=True)
     assert file
-    path = Path(file)
-    assert path.exists()
-    assert path.suffix == ".pdf"
+    assert file.exists()
+    assert file.name == "a.pdf"

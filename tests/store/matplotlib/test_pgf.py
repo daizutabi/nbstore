@@ -36,3 +36,7 @@ def test_data(store: Store):
     assert "text/plain" in data
     assert "image/png" in data
     assert data["text/plain"].startswith("%% Creator: Matplotlib,")
+
+
+def test_stream(store: Store):
+    assert store.get_stream("pgf.ipynb", "fig:stream") == "123\n"

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 from PIL import Image
 
@@ -44,14 +42,10 @@ def test_data(store: Store):
 
 
 def test_image(store: Store):
-    from nbstore.image import create_image_file
-
-    data = store.get_data("png.ipynb", "fig:png")
-    file = create_image_file(data)
+    file = store.create_image_file("png.ipynb", "fig:png", "a", delete=True)
     assert file
-    path = Path(file)
-    assert path.exists()
-    assert path.suffix == ".png"
+    assert file.exists()
+    assert file.name == "a.png"
     image = Image.open(file)
     assert image.format == "PNG"
     assert image.size == (1136, 826)
@@ -60,4 +54,4 @@ def test_image(store: Store):
 def test_image_none():
     from nbstore.image import create_image_file
 
-    assert create_image_file({}) is None
+    assert create_image_file({}, "a") is None
