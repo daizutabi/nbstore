@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import pytest
+from PIL import Image
 
 from nbstore.store import Store
 
@@ -38,3 +41,23 @@ def test_data(store: Store):
     assert "text/plain" in data
     assert "image/png" in data
     assert data["image/png"].startswith("iVBO")
+
+
+def test_image(store: Store):
+    from nbstore.image import create_image_file
+
+    data = store.get_data("png.ipynb", "fig:png")
+    file = create_image_file(data)
+    assert file
+    path = Path(file)
+    assert path.exists()
+    assert path.suffix == ".png"
+    image = Image.open(file)
+    assert image.format == "PNG"
+    assert image.size == (1136, 826)
+
+
+def test_image_none():
+    from nbstore.image import create_image_file
+
+    assert create_image_file({}) is None
