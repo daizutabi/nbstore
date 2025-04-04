@@ -41,6 +41,14 @@ def test_data(store: Store):
     assert data["image/png"].startswith("iVBO")
 
 
+def test_content(store: Store):
+    data = store.get_content("png.ipynb", "fig:png")
+    assert isinstance(data, tuple)
+    assert len(data) == 2
+    assert isinstance(data[0], bytes)
+    assert data[1] == ".png"
+
+
 def test_image(store: Store):
     file = store.create_image_file("png.ipynb", "fig:png", "a", delete=True)
     assert file

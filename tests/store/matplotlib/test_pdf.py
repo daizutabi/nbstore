@@ -31,6 +31,14 @@ def test_outputs(store: Store):
     assert outputs[1]["output_type"] == "display_data"
 
 
+def test_content(store: Store):
+    data = store.get_content("pdf.ipynb", "fig:pdf")
+    assert isinstance(data, tuple)
+    assert len(data) == 2
+    assert isinstance(data[0], bytes)
+    assert data[1] == ".pdf"
+
+
 def test_data(store: Store):
     data = store.get_data("pdf.ipynb", "fig:pdf")
     assert isinstance(data, dict)
