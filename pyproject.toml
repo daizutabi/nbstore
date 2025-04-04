@@ -28,7 +28,6 @@ dependencies = ["ipython>=6", "nbconvert>=7", "nbformat>=5"]
 Documentation = "https://daizutabi.github.io/nbstore/"
 Source = "https://github.com/daizutabi/nbstore"
 Issues = "https://github.com/daizutabi/nbstore/issues"
-Changelog = "https://github.com/daizutabi/nbstore/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
