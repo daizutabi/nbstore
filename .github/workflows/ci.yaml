@@ -15,16 +15,23 @@ env:
 
 jobs:
   run:
-    name: Python ${{ matrix.python-version }} on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
-    runs-on: ${{ matrix.os }}
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
+      - name: Install TeXLive
+        run: |
+          sudo apt-get update
+          sudo apt-get install texlive-xetex texlive-luatex texlive-latex-recommended
+          sudo apt-get install texlive-latex-extra texlive-lang-japanese
+          sudo apt-get install libcairo2 poppler-utils
+          lualatex --version
+          pdffonts -v
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
