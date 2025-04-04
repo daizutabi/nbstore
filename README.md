@@ -5,6 +5,7 @@
 [![Build Status][GHAction-image]][GHAction-link]
 [![Coverage Status][codecov-image]][codecov-link]
 
+nbstore is a tool for storing and managing images and other files in Jupyter notebooks.
 
 <!-- Badges -->
 [pypi-v-image]: https://img.shields.io/pypi/v/nbstore.svg
