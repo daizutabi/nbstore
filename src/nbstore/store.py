@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import nbformat
 
-from .image import create_image_file
+from .image import create_image_file, get_content
 
 if TYPE_CHECKING:
     from nbformat import NotebookNode
@@ -102,6 +102,10 @@ class Store:
         ep = ExecutePreprocessor(timeout=600)
         ep.preprocess(nb)
         return nb
+
+    def get_content(self, url: str, identifier: str) -> tuple[str | bytes, str] | None:
+        data = self.get_data(url, identifier)
+        return get_content(data)
 
     def create_image_file(
         self,

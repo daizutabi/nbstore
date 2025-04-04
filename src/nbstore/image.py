@@ -5,14 +5,14 @@ import base64
 from pathlib import Path
 
 
-def decode(data: dict[str, str]) -> tuple[str, str | bytes] | None:
+def get_content(data: dict[str, str]) -> tuple[str | bytes, str] | None:
     if text := data.get("application/pdf"):
-        return ".pdf", base64.b64decode(text)
+        return base64.b64decode(text), ".pdf"
 
     for mime, text in data.items():
         if mime.startswith("image/"):
             ext = mime.split("/")[1]
-            return f".{ext}", base64.b64decode(text)
+            return base64.b64decode(text), f".{ext}"
 
     return None
 
@@ -23,12 +23,12 @@ def create_image_file(
     *,
     delete: bool = False,
 ) -> Path | None:
-    decoded = decode(data)
+    decoded = get_content(data)
 
     if decoded is None:
         return None
 
-    suffix, content = decoded
+    content, suffix = decoded
     file = Path(filename).with_suffix(suffix)
 
     if isinstance(content, str):
