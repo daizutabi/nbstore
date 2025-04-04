@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from nbstore.store import Store
@@ -38,3 +40,14 @@ def test_data(store: Store):
     assert "text/plain" in data
     assert "image/png" in data
     assert data["application/pdf"].startswith("JVBE")
+
+
+def test_image(store: Store):
+    from nbstore.image import create_image_file
+
+    data = store.get_data("pdf.ipynb", "fig:pdf")
+    file = create_image_file(data)
+    assert file
+    path = Path(file)
+    assert path.exists()
+    assert path.suffix == ".pdf"
