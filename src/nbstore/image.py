@@ -5,7 +5,7 @@ import base64
 from pathlib import Path
 
 
-def decode(data: dict[str, str]) -> tuple[str, bytes] | None:
+def decode(data: dict[str, str]) -> tuple[str, str | bytes] | None:
     if text := data.get("application/pdf"):
         return ".pdf", base64.b64decode(text)
 
@@ -28,8 +28,13 @@ def create_image_file(
     if decoded is None:
         return None
 
-    file = Path(filename).with_suffix(decoded[0])
-    file.write_bytes(decoded[1])
+    suffix, content = decoded
+    file = Path(filename).with_suffix(suffix)
+
+    if isinstance(content, str):
+        file.write_text(content)
+    else:
+        file.write_bytes(content)
 
     if delete:
         atexit.register(lambda: file.unlink(missing_ok=True))
