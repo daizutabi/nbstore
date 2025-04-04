@@ -4,11 +4,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
-from nbformat import NotebookNode
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from nbformat import NotebookNode
 
 
 @dataclass
@@ -91,6 +91,8 @@ class Store:
         return get_language(nb)
 
     def execute(self, url: str) -> NotebookNode:
+        from nbconvert.preprocessors import ExecutePreprocessor
+
         nb = self.get_notebook(url)
         ep = ExecutePreprocessor(timeout=600)
         ep.preprocess(nb)
