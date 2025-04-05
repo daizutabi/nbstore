@@ -1,6 +1,6 @@
 site_name: nbstore
 site_url: https://daizutabi.github.io/nbstore/
-site_description: Finite difference ray tracing
+site_description: Jupyter notebook store
 site_author: daizutabi
 repo_url: https://github.com/daizutabi/nbstore/
 repo_name: daizutabi/nbstore
