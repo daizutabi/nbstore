@@ -31,12 +31,12 @@ def test_outputs(store: Store):
     assert outputs[1]["output_type"] == "display_data"
 
 
-def test_content(store: Store):
-    data = store.get_content("pdf.ipynb", "fig:pdf")
+def test_mime_content(store: Store):
+    data = store.get_mime_content("pdf.ipynb", "fig:pdf")
     assert isinstance(data, tuple)
     assert len(data) == 2
-    assert isinstance(data[0], bytes)
-    assert data[1] == ".pdf"
+    assert data[0] == "application/pdf"
+    assert isinstance(data[1], bytes)
 
 
 def test_data(store: Store):
