@@ -5,11 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "nbstore"
 version = "0.1.7"
-description = "Jupyter notebook store"
+description = "A lightweight tool for extracting and manipulating content from Jupyter notebooks"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
-keywords = ["jupyter", "notebook"]
+keywords = [
+  "jupyter",
+  "notebook",
+  "extraction",
+  "content-management",
+  "visualization",
+  "markdown",
+  "documentation",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
