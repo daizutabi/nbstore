@@ -19,7 +19,7 @@ def test_mime_content_stream(store: Store):
     content = store.get_mime_content("text.ipynb", "text:stream")
     assert isinstance(content, tuple)
     assert content[0] == "text/plain"
-    assert content[1] == "stream1\nstream2"
+    assert content[1] == "stream1\nstream2\n"
 
 
 def test_mime_content_both(store: Store):
