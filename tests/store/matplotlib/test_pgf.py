@@ -17,6 +17,7 @@ def test_cell(store: Store):
 def test_source(store: Store):
     source = store.get_source("pgf.ipynb", "fig:pgf")
     assert isinstance(source, str)
+    assert source.startswith("import")
     assert "plot" in source
 
 
