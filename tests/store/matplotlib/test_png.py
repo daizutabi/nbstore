@@ -1,5 +1,4 @@
 import pytest
-from PIL import Image
 
 from nbstore.store import Store
 
@@ -47,19 +46,3 @@ def test_mime_content(store: Store):
     assert len(data) == 2
     assert data[0] == "image/png"
     assert isinstance(data[1], bytes)
-
-
-def test_image(store: Store):
-    file = store.create_image_file("png.ipynb", "fig:png", "a", delete=True)
-    assert file
-    assert file.exists()
-    assert file.name == "a.png"
-    image = Image.open(file)
-    assert image.format == "PNG"
-    assert image.size == (1136, 826)
-
-
-def test_image_none():
-    from nbstore.content import create_image_file
-
-    assert create_image_file({}, "a") is None

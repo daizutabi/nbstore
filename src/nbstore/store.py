@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import nbformat
 
-from .content import create_image_file, get_mime_content
+from .content import get_mime_content
 
 if TYPE_CHECKING:
     from nbformat import NotebookNode
@@ -114,17 +114,6 @@ class Store:
     ) -> tuple[str, str | bytes] | None:
         data = self.get_data(url, identifier)
         return get_mime_content(data)
-
-    def create_image_file(
-        self,
-        url: str,
-        identifier: str,
-        filename: Path | str,
-        *,
-        delete: bool = False,
-    ) -> Path | None:
-        data = self.get_data(url, identifier)
-        return create_image_file(data, filename, delete=delete)
 
 
 def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
