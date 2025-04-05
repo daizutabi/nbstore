@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING, Any
 
 import nbformat
 
+import nbstore.pgf
+
 from .content import get_mime_content
 
 if TYPE_CHECKING:
@@ -75,7 +77,8 @@ class Store:
 
     def get_data(self, url: str, identifier: str) -> dict[str, str]:
         outputs = self.get_outputs(url, identifier)
-        return get_data(outputs)
+        data = get_data(outputs)
+        return convert(data)
 
     def add_data(self, url: str, identifier: str, mime: str, data: str) -> None:
         outputs = self.get_outputs(url, identifier)
@@ -166,3 +169,11 @@ def get_data(outputs: list) -> dict[str, str]:
 
 def get_language(nb: dict) -> str:
     return nb["metadata"]["kernelspec"]["language"]
+
+
+def convert(data: dict[str, str]) -> dict[str, str]:
+    text = data.get("text/plain")
+    if text and text.startswith("%% Creator: Matplotlib, PGF backend"):
+        data["text/plain"] = nbstore.pgf.convert(text)
+
+    return data

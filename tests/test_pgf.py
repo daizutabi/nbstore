@@ -8,8 +8,6 @@ import pytest
 from IPython.lib.pretty import RepresentationPrinter
 from PIL import Image
 
-from nbstore.formatter import RASTER_BEGIN, RASTER_END
-
 
 @pytest.fixture(scope="module")
 def text():
@@ -29,42 +27,25 @@ def text():
 
 
 def test_matplotlib_figure_to_pgf_raster(text: str):
-    assert f"\n{RASTER_BEGIN}\n" in text
-    assert text.endswith(f"\n{RASTER_END}")
+    assert text.count("]{data:image/png;base64,iVBOR") == 2
 
 
-def test_split(text: str):
-    from nbstore.pgf import split
+def test_findall(text: str):
+    from nbstore.pgf import BASE64_PATTERN
 
-    text, images = split(text)
-    assert text.startswith("%% Creator: Matplotlib, PGF backend")
-    assert text.endswith("\\endgroup%\n")
-
-    assert len(images) == 2
-
-    for name, data in images.items():
-        assert name in text
-        assert data.startswith("iVBOR")
-        assert not data.endswith("\n")
+    assert len(BASE64_PATTERN.findall(text)) == 2
 
 
-def test_split_none():
-    from nbstore.pgf import split
-
-    text, images = split("abc")
-    assert text == "abc"
-    assert not images
-
-
-def test_convert_pgf_text(text: str):
+def test_convert(text: str):
     from nbstore.pgf import convert
 
     text = convert(text)
 
-    for k, x in enumerate(re.findall(r"\\includegraphics\[.+?\]{(.+?)}", text)):
-        assert x.endswith(f"-img{k}.png")
-        assert Path(x).exists()
-        image = Image.open(x)
+    for filename in re.findall(r"\\includegraphics\[.+?\]{(.+?)}", text):
+        assert isinstance(filename, str)
+        assert filename.endswith(".png")
+        assert Path(filename).exists()
+        image = Image.open(filename)
         assert image.format == "PNG"
         assert image.size == (141, 141)
 
