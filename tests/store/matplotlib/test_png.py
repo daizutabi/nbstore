@@ -41,12 +41,12 @@ def test_data(store: Store):
     assert data["image/png"].startswith("iVBO")
 
 
-def test_content(store: Store):
-    data = store.get_content("png.ipynb", "fig:png")
+def test_mime_content(store: Store):
+    data = store.get_mime_content("png.ipynb", "fig:png")
     assert isinstance(data, tuple)
     assert len(data) == 2
-    assert isinstance(data[0], bytes)
-    assert data[1] == ".png"
+    assert data[0] == "image/png"
+    assert isinstance(data[1], bytes)
 
 
 def test_image(store: Store):
@@ -60,6 +60,6 @@ def test_image(store: Store):
 
 
 def test_image_none():
-    from nbstore.image import create_image_file
+    from nbstore.content import create_image_file
 
     assert create_image_file({}, "a") is None
