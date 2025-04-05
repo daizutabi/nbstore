@@ -40,7 +40,7 @@ class Store:
         if nb := self.notebooks.get(abs_path):
             nbformat.write(nb, abs_path)
 
-    def _get_abs_path(self, url: str) -> Path:
+    def get_abs_path(self, url: str) -> Path:
         if not url and self.current_path:
             return self.current_path
 
@@ -54,7 +54,7 @@ class Store:
         raise ValueError(msg)
 
     def get_notebook(self, url: str) -> NotebookNode:
-        abs_path = self._get_abs_path(url)
+        abs_path = self.get_abs_path(url)
         return self._read(abs_path)
 
     def get_cell(self, url: str, identifier: str) -> dict[str, Any]:
@@ -83,7 +83,7 @@ class Store:
             output[mime] = data
 
     def save_notebook(self, url: str) -> None:
-        self._write(self._get_abs_path(url))
+        self._write(self.get_abs_path(url))
 
     def delete_data(self, url: str, identifier: str, mime: str) -> None:
         outputs = self.get_outputs(url, identifier)
