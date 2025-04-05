@@ -131,9 +131,9 @@ def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
 
 def get_source(nb: NotebookNode, identifier: str) -> str:
     if source := get_cell(nb, identifier).get("source", ""):
-        source = "\n".join(source.split("\n")[1:])
+        return source.split("\n", 1)[1]
 
-    return source
+    return ""
 
 
 def get_outputs(nb: NotebookNode, identifier: str) -> list:
