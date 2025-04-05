@@ -41,13 +41,18 @@ def test_convert(text: str):
 
     text = convert(text)
 
-    for filename in re.findall(r"\\includegraphics\[.+?\]{(.+?)}", text):
+    k = 0
+
+    for filename in re.findall(r"\{\\includegraphics\[.+?\]\{(.+?)\}\}", text):
         assert isinstance(filename, str)
         assert filename.endswith(".png")
         assert Path(filename).exists()
         image = Image.open(filename)
         assert image.format == "PNG"
         assert image.size == (141, 141)
+        k += 1
+
+    assert k == 2
 
 
 def test_convert_none():

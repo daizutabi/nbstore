@@ -6,7 +6,7 @@ import re
 import uuid
 from pathlib import Path
 
-BASE64_PATTERN = re.compile(r"\{data:image/(?P<ext>.*?);base64,(?P<b64>.*)\}")
+BASE64_PATTERN = re.compile(r"\{data:image/(?P<ext>.*?);base64,(?P<b64>.*?)\}")
 
 
 def convert(text: str) -> str:

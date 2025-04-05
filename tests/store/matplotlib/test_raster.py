@@ -28,7 +28,11 @@ def test_backend(text: str):
 
 
 def test_convert(text: str):
-    for k, filename in enumerate(re.findall(r"\\includegraphics\[.+?\]{(.+?)}", text)):
+    i = 0
+
+    for k, filename in enumerate(
+        re.findall(r"\{\\includegraphics\[.+?\]\{(.+?)\}\}", text),
+    ):
         assert isinstance(filename, str)
         assert filename.endswith(".png")
         assert Path(filename).exists()
@@ -38,3 +42,6 @@ def test_convert(text: str):
             assert image.size == (71, 71)
         else:
             assert image.size == (141, 141)
+        i += 1
+
+    assert i == 2
