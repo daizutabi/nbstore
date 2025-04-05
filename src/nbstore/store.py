@@ -115,15 +115,8 @@ class Store:
         url: str,
         identifier: str,
     ) -> tuple[str, str | bytes] | None:
-        try:
-            data = self.get_data(url, identifier)
-            return get_mime_content(data)
-
-        except ValueError:
-            if text := self.get_stream(url, identifier):
-                return "text/plain", text.rstrip()
-
-        return None
+        data = self.get_data(url, identifier)
+        return get_mime_content(data)
 
 
 def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
@@ -151,7 +144,7 @@ def get_data_by_type(outputs: list, output_type: str) -> dict[str, str] | None:
     for output in outputs:
         if output["output_type"] == output_type:
             if output_type == "stream":
-                return {"text/plain": output["text"]}
+                return {"text/plain": output["text"].rstrip()}
 
             return output["data"]
 
@@ -166,12 +159,11 @@ def get_stream(outputs: list) -> str | None:
 
 
 def get_data(outputs: list) -> dict[str, str]:
-    for type_ in ["display_data", "execute_result"]:
+    for type_ in ["display_data", "execute_result", "stream"]:
         if data := get_data_by_type(outputs, type_):
             return data
 
-    msg = "No output data"
-    raise ValueError(msg)
+    return {}
 
 
 def get_language(nb: dict) -> str:
