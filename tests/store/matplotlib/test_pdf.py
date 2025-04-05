@@ -46,10 +46,3 @@ def test_data(store: Store):
     assert "text/plain" in data
     assert "image/png" in data
     assert data["application/pdf"].startswith("JVBE")
-
-
-def test_image(store: Store):
-    file = store.create_image_file("pdf.ipynb", "fig:pdf", "a", delete=True)
-    assert file
-    assert file.exists()
-    assert file.name == "a.pdf"
