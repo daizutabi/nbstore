@@ -3,11 +3,6 @@ import pytest
 from nbstore.store import Store
 
 
-def test_get_data_none(store: Store):
-    with pytest.raises(ValueError, match="No output data"):
-        store.get_data("pgf.ipynb", "fig:none")
-
-
 def test_add_data(store: Store):
     from nbstore.store import get_data_by_type
 
@@ -38,7 +33,11 @@ def test_get_language(store: Store):
     assert store.get_language("add.ipynb") == "python"
 
 
-def test_get_cell_error(store: Store):
+def test_get_data_empty(store: Store):
+    assert store.get_data("pgf.ipynb", "fig:none") == {}
+
+
+def test_get_data_error(store: Store):
     with pytest.raises(ValueError, match="Unknown identifier: fig:invalid"):
         store.get_data("pgf.ipynb", "fig:invalid")
 

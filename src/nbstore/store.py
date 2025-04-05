@@ -144,7 +144,7 @@ def get_data_by_type(outputs: list, output_type: str) -> dict[str, str] | None:
     for output in outputs:
         if output["output_type"] == output_type:
             if output_type == "stream":
-                return {"text/plain": output["text"]}
+                return {"text/plain": output["text"].rstrip()}
 
             return output["data"]
 
@@ -159,12 +159,11 @@ def get_stream(outputs: list) -> str | None:
 
 
 def get_data(outputs: list) -> dict[str, str]:
-    for type_ in ["display_data", "execute_result"]:
+    for type_ in ["display_data", "execute_result", "stream"]:
         if data := get_data_by_type(outputs, type_):
             return data
 
-    msg = "No output data"
-    raise ValueError(msg)
+    return {}
 
 
 def get_language(nb: dict) -> str:

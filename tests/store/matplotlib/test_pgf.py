@@ -40,4 +40,4 @@ def test_data(store: Store):
 
 
 def test_stream(store: Store):
-    assert store.get_stream("pgf.ipynb", "fig:stream") == "123\n"
+    assert store.get_stream("pgf.ipynb", "fig:stream") == "123"
