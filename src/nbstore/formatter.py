@@ -7,8 +7,6 @@ import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from IPython.core.getipython import get_ipython
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -135,6 +133,12 @@ def set_formatter(module: str, fmt: str, ip=None) -> None:
     if module == "holoviews":
         set_formatter_holoviews(fmt)
         return
+
+    try:
+        from IPython.core.getipython import get_ipython
+    except ModuleNotFoundError:  # no cov
+        msg = "IPython is not installed"
+        raise ModuleNotFoundError(msg) from None
 
     if not ip and not (ip := get_ipython()):
         return

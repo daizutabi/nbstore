@@ -96,7 +96,11 @@ class Store:
         return get_language(nb)
 
     def execute(self, url: str) -> NotebookNode:
-        from nbconvert.preprocessors import ExecutePreprocessor
+        try:
+            from nbconvert.preprocessors import ExecutePreprocessor
+        except ModuleNotFoundError:  # no cov
+            msg = "nbconvert is not installed"
+            raise ModuleNotFoundError(msg) from None
 
         nb = self.get_notebook(url)
         ep = ExecutePreprocessor(timeout=600)

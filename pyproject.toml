@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Text Processing :: Markup :: Markdown",
 ]
 requires-python = ">=3.10"
-dependencies = ["ipython>=6", "nbconvert>=7", "nbformat>=5"]
+dependencies = ["nbformat>=5"]
 
 [project.urls]
 Documentation = "https://daizutabi.github.io/nbstore/"
@@ -31,19 +31,21 @@ Issues = "https://github.com/daizutabi/nbstore/issues"
 
 [dependency-groups]
 dev = [
-  "ipykernel>=6.29",
   "cairosvg>=2.7",
   "hvplot>=0.11",
+  "ipykernel>=6.29",
+  "ipython>=8",
   "matplotlib>=3.10",
+  "nbconvert>=7",
   "numpy>=2.2",
   "pandas>=2.2",
+  "pillow>=11",
   "polars>=1.22",
+  "pyarrow>=19",
   "pytest-clarity",
   "pytest-cov",
   "pytest-randomly",
   "pytest-xdist>=3.6",
-  "pyarrow>=19",
-  "pillow>=11",
   "ruff>=0.11",
   "seaborn>=0.13",
 ]
