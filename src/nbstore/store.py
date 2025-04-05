@@ -144,7 +144,7 @@ def get_data_by_type(outputs: list, output_type: str) -> dict[str, str] | None:
     for output in outputs:
         if output["output_type"] == output_type:
             if output_type == "stream":
-                return {"text/plain": output["text"].rstrip()}
+                return {"text/plain": output["text"]}
 
             return output["data"]
 
