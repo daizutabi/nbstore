@@ -115,8 +115,15 @@ class Store:
         url: str,
         identifier: str,
     ) -> tuple[str, str | bytes] | None:
-        data = self.get_data(url, identifier)
-        return get_mime_content(data)
+        try:
+            data = self.get_data(url, identifier)
+            return get_mime_content(data)
+
+        except ValueError:
+            if text := self.get_stream(url, identifier):
+                return "text/plain", text.rstrip()
+
+        return None
 
 
 def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:

@@ -22,4 +22,7 @@ def get_mime_content(data: dict[str, str]) -> tuple[str, str | bytes] | None:
         if mime.startswith("image/"):
             return mime, base64.b64decode(text)
 
+    if "text/plain" in data:
+        return "text/plain", data["text/plain"]
+
     return None
