@@ -15,10 +15,6 @@ if TYPE_CHECKING:
     from seaborn.objects import Plot
 
 
-RASTER_BEGIN = "%% __nbstore_begin__"
-RASTER_END = "%% __nbstore_end__"
-
-
 def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> None:
     name = str(uuid.uuid4())
 
@@ -33,16 +29,17 @@ def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> N
         if not imagenames:
             return rp.text(text)
 
-        imagetexts = [_encode_pgf_text(x, directory) for x in imagenames]
-        texts = [text, RASTER_BEGIN, *imagetexts, RASTER_END]
-        text = "\n".join(texts)
+        for name in imagenames:
+            text = text.replace(name, _encode_pgf_text(name, directory))
+
         return rp.text(text)
 
 
 def _encode_pgf_text(name: str, directory: Path) -> str:
+    ext = name.rsplit(".", 1)[-1]
     data = (directory / name).read_bytes()
-    text = base64.b64encode(data).decode()
-    return f"{name}:{text}"
+    b64 = base64.b64encode(data).decode()
+    return f"data:image/{ext};base64,{b64}"
 
 
 def matplotlib_figure_to_pdf(fig: Figure) -> bytes:
