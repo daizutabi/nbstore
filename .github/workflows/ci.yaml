@@ -24,54 +24,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Cache apt packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-texlive-${{ hashFiles('.github/workflows/ci.yaml') }}
-
       - name: Install TeXLive
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            texlive-base texlive-latex-base texlive-latex-recommended \
-            texlive-latex-extra texlive-lang-japanese \
-            libcairo2 poppler-utils
+          sudo apt-get install texlive-xetex texlive-luatex texlive-latex-recommended
+          sudo apt-get install texlive-latex-extra texlive-lang-japanese
+          sudo apt-get install libcairo2 poppler-utils
           lualatex --version
           pdffonts -v
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-
       - name: Install uv and ruff
         run: pip install uv ruff
-
       - name: Install the project
         run: uv sync
-
       - name: Ruff check
         run: ruff check
-
       - name: Run test
         run: uv run pytest -v --junitxml=junit.xml
-
       - name: Upload Codecov Results
         if: success()
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
-
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
