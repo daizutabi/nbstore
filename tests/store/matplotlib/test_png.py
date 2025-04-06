@@ -46,3 +46,10 @@ def test_mime_content(store: Store):
     assert len(data) == 2
     assert data[0] == "image/png"
     assert isinstance(data[1], bytes)
+
+
+def test_execute_force_skip(store: Store):
+    store.executed.clear()
+    nb = store.execute("png.ipynb", force=True)
+    assert store.get_abs_path("png.ipynb") in store.executed
+    assert store.execute("png.ipynb") == nb
