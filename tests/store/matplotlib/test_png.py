@@ -50,8 +50,8 @@ def test_mime_content(store: Store):
 
 def test_execute_force_skip(store: Store):
     store.executed.clear()
-    assert store.is_dirty("png.ipynb")
-    nb = store.execute("png.ipynb", force=True)
+    assert store.needs_execution("png.ipynb")
+    nb = store.execute("png.ipynb")
     assert store.get_abs_path("png.ipynb") in store.executed
     assert store.execute("png.ipynb") == nb
-    assert not store.is_dirty("png.ipynb")
+    assert not store.needs_execution("png.ipynb")
