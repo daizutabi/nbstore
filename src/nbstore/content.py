@@ -12,8 +12,9 @@ def get_mime_content(data: dict[str, str]) -> tuple[str, str | bytes] | None:
     Returns:
         tuple[str, str | bytes] | None: A tuple of the mime type and the content.
     """
-    if text := data.get("text/html"):
-        return "text/html", text
+    for mime in ["image/svg+xml", "text/html"]:
+        if text := data.get(mime):
+            return mime, text
 
     if text := data.get("application/pdf"):
         return "application/pdf", base64.b64decode(text)
