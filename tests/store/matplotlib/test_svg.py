@@ -31,3 +31,12 @@ def test_data(store: Store):
     assert "text/plain" in data
     assert "image/png" in data
     assert data["image/svg+xml"].startswith('<?xml version="1.0"')
+
+
+def test_mime_content(store: Store):
+    mime_content = store.get_mime_content("svg.ipynb", "fig:svg")
+    assert isinstance(mime_content, tuple)
+    mime, content = mime_content
+    assert mime == "image/svg+xml"
+    assert isinstance(content, str)
+    assert content.startswith('<?xml version="1.0"')
