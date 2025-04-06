@@ -63,9 +63,15 @@ class Store:
         nb = self.get_notebook(url)
         return get_cell(nb, identifier)
 
-    def get_source(self, url: str, identifier: str) -> str:
+    def get_source(
+        self,
+        url: str,
+        identifier: str,
+        *,
+        include_identifier: bool = False,
+    ) -> str:
         nb = self.get_notebook(url)
-        return get_source(nb, identifier)
+        return get_source(nb, identifier, include_identifier=include_identifier)
 
     def get_outputs(self, url: str, identifier: str) -> list:
         nb = self.get_notebook(url)
@@ -129,8 +135,16 @@ def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
     raise ValueError(msg)
 
 
-def get_source(nb: NotebookNode, identifier: str) -> str:
+def get_source(
+    nb: NotebookNode,
+    identifier: str,
+    *,
+    include_identifier: bool = False,
+) -> str:
     if source := get_cell(nb, identifier).get("source", ""):
+        if include_identifier:
+            return source
+
         return source.split("\n", 1)[1]
 
     return ""
