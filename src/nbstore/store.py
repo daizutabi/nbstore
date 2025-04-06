@@ -110,7 +110,7 @@ class Store:
         nb = self.get_notebook(url)
         return get_language(nb)
 
-    def is_dirty(self, url: str) -> bool:
+    def needs_execution(self, url: str) -> bool:
         abs_path = self.get_abs_path(url)
 
         if abs_path not in self.executed:
@@ -119,24 +119,14 @@ class Store:
         mtime = abs_path.stat().st_mtime
         return abs_path not in self.st_mtime or self.st_mtime[abs_path] != mtime
 
-    def execute(
-        self,
-        url: str,
-        *,
-        force: bool = False,
-        timeout: int = 600,
-    ) -> NotebookNode:
-        nb = self.get_notebook(url)
-
-        if not self.is_dirty(url) and not force:
-            return nb
-
+    def execute(self, url: str, *, timeout: int = 600) -> NotebookNode:
         try:
             from nbconvert.preprocessors import ExecutePreprocessor
         except ModuleNotFoundError:  # no cov
             msg = "nbconvert is not installed"
             raise ModuleNotFoundError(msg) from None
 
+        nb = self.get_notebook(url)
         ep = ExecutePreprocessor(timeout=timeout)
         ep.preprocess(nb)
 
