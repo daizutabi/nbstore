@@ -17,19 +17,21 @@ class Store:
     notebook_dir: Path
     notebooks: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
+    executed: set[Path]
     current_path: Path | None
 
     def __init__(self, notebook_dir: Path | str) -> None:
         self.notebook_dir = Path(notebook_dir)
         self.notebooks = {}
         self.st_mtime = {}
+        self.executed = set()
         self.current_path = None
 
     def _read(self, abs_path: Path) -> NotebookNode:
         mtime = abs_path.stat().st_mtime
 
-        if (nb_ := self.notebooks.get(abs_path)) and self.st_mtime[abs_path] == mtime:
-            return nb_
+        if abs_path in self.notebooks and self.st_mtime[abs_path] == mtime:
+            return self.notebooks[abs_path]
 
         nb: NotebookNode = nbformat.read(abs_path, as_version=4)  # type: ignore
 
@@ -43,8 +45,12 @@ class Store:
             nbformat.write(nb, abs_path)
 
     def get_abs_path(self, url: str) -> Path:
-        if not url and self.current_path:
-            return self.current_path
+        if not url:
+            if self.current_path:
+                return self.current_path
+
+            msg = "No active notebook."
+            raise ValueError(msg)
 
         abs_path = (self.notebook_dir / url).absolute()
 
@@ -52,7 +58,7 @@ class Store:
             self.current_path = abs_path
             return abs_path
 
-        msg = "Unknown path."
+        msg = f"Notebook not found: {abs_path}."
         raise ValueError(msg)
 
     def get_notebook(self, url: str) -> NotebookNode:
@@ -104,16 +110,27 @@ class Store:
         nb = self.get_notebook(url)
         return get_language(nb)
 
-    def execute(self, url: str) -> NotebookNode:
+    def execute(self, url: str, *, force: bool = False) -> NotebookNode:
+        abs_path = self.get_abs_path(url)
+        mtime = abs_path.stat().st_mtime
+
+        if abs_path not in self.st_mtime or self.st_mtime[abs_path] != mtime:
+            force = True
+
+        nb = self.get_notebook(url)
+
+        if abs_path in self.executed and not force:
+            return nb
+
         try:
             from nbconvert.preprocessors import ExecutePreprocessor
         except ModuleNotFoundError:  # no cov
             msg = "nbconvert is not installed"
             raise ModuleNotFoundError(msg) from None
 
-        nb = self.get_notebook(url)
         ep = ExecutePreprocessor(timeout=600)
         ep.preprocess(nb)
+        self.executed.add(abs_path)
         return nb
 
     def get_mime_content(
@@ -147,7 +164,7 @@ def get_source(
 
         return source.split("\n", 1)[1]
 
-    return ""
+    raise NotImplementedError
 
 
 def get_outputs(nb: NotebookNode, identifier: str) -> list:
