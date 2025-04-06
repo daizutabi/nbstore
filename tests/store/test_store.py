@@ -48,6 +48,11 @@ def test_current_path(store: Store):
     assert a == b
 
 
+def test_current_path_include_identifier(store: Store):
+    a = store.get_source("pgf.ipynb", "fig:stream", include_identifier=True)
+    assert a == "# #fig:stream\nprint(123)"
+
+
 def test_abs_path_error(store: Store):
     with pytest.raises(ValueError, match="Unknown path."):
         store.get_source("unknown.ipynb", "fig:stream")
