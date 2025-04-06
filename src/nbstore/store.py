@@ -110,16 +110,25 @@ class Store:
         nb = self.get_notebook(url)
         return get_language(nb)
 
-    def execute(self, url: str, *, force: bool = False) -> NotebookNode:
+    def is_dirty(self, url: str) -> bool:
         abs_path = self.get_abs_path(url)
+
+        if abs_path not in self.executed:
+            return True
+
         mtime = abs_path.stat().st_mtime
+        return abs_path not in self.st_mtime or self.st_mtime[abs_path] != mtime
 
-        if abs_path not in self.st_mtime or self.st_mtime[abs_path] != mtime:
-            force = True
-
+    def execute(
+        self,
+        url: str,
+        *,
+        force: bool = False,
+        timeout: int = 600,
+    ) -> NotebookNode:
         nb = self.get_notebook(url)
 
-        if abs_path in self.executed and not force:
+        if not self.is_dirty(url) and not force:
             return nb
 
         try:
@@ -128,9 +137,12 @@ class Store:
             msg = "nbconvert is not installed"
             raise ModuleNotFoundError(msg) from None
 
-        ep = ExecutePreprocessor(timeout=600)
+        ep = ExecutePreprocessor(timeout=timeout)
         ep.preprocess(nb)
+
+        abs_path = self.get_abs_path(url)
         self.executed.add(abs_path)
+
         return nb
 
     def get_mime_content(
