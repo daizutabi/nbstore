@@ -10,18 +10,22 @@ import nbstore.pgf
 from .content import get_mime_content
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from nbformat import NotebookNode
 
 
 class Store:
-    notebook_dir: Path
+    src_dirs: list[Path]
     notebooks: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
     executed: set[Path]
     current_path: Path | None
 
-    def __init__(self, notebook_dir: Path | str) -> None:
-        self.notebook_dir = Path(notebook_dir)
+    def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
+        if isinstance(src_dirs, (str, Path)):
+            src_dirs = [src_dirs]
+        self.src_dirs = [Path(src_dir) for src_dir in src_dirs]
         self.notebooks = {}
         self.st_mtime = {}
         self.executed = set()
@@ -52,13 +56,13 @@ class Store:
             msg = "No active notebook."
             raise ValueError(msg)
 
-        abs_path = (self.notebook_dir / url).absolute()
+        for src_dir in self.src_dirs:
+            abs_path = (src_dir / url).absolute()
+            if abs_path.exists():
+                self.current_path = abs_path
+                return abs_path
 
-        if abs_path.exists():
-            self.current_path = abs_path
-            return abs_path
-
-        msg = f"Notebook not found: {abs_path}."
+        msg = f"Notebook not found in any source directory: {url}"
         raise ValueError(msg)
 
     def get_notebook(self, url: str) -> NotebookNode:
