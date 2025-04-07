@@ -55,11 +55,11 @@ def test_current_path_include_identifier(store: Store):
 
 def test_abs_path_error(store: Store):
     with pytest.raises(ValueError, match="Notebook not found"):
-        store.get_abs_path("unknown.ipynb")
+        store.find_path("unknown.ipynb")
 
 
 def test_abs_path_error_with_current_path(store: Store):
-    store.current_path = None
+    store.active_path = None
     with pytest.raises(ValueError, match="No active notebook."):
         store.get_notebook("")
 
