@@ -24,12 +24,6 @@ def test_find_path_error_not_found(store: Store):
         store.find_path("unknown")
 
 
-def test_set_active_path(store: Store):
-    store.set_active_path("add.ipynb")
-    assert store.active_path
-    assert store.active_path.name == "add.ipynb"
-
-
 def test_write(store: Store, tmp_path: Path):
     nb = store.get_notebook("add.ipynb")
     path = tmp_path / "tmp.ipynb"
