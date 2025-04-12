@@ -41,10 +41,6 @@ class Store:
         msg = f"Source file not found in any source directory: {url}"
         raise ValueError(msg)
 
-    def set_active_path(self, url: str) -> None:
-        if url:
-            self.active_path = self.find_path(url)
-
     def is_dirty(self, url: str) -> bool:
         path = self.find_path(url)
         if path not in self.st_mtime:
