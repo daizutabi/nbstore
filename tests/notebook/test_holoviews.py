@@ -2,6 +2,7 @@ import base64
 
 import pytest
 
+from nbstore.notebook import Notebook
 from nbstore.store import Store
 
 
@@ -12,12 +13,16 @@ def lib(request: pytest.FixtureRequest):
 
 @pytest.fixture(scope="module")
 def nb(store: Store, lib: str):
-    return store.execute(f"{lib}.ipynb")
+    nb = store.get_notebook(f"{lib}.ipynb")
+    assert not nb.is_executed
+    nb.execute()
+    assert nb.is_executed
+    return nb
 
 
 @pytest.fixture(scope="module")
-def data(store: Store, lib: str, nb):
-    return store.get_data(f"{lib}.ipynb", f"fig:{lib}")
+def data(nb: Notebook, lib: str):
+    return nb.get_data(f"fig:{lib}")
 
 
 def test_type(data: dict):

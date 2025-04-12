@@ -4,23 +4,25 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
+from nbstore.notebook import Notebook
 from nbstore.store import Store
 
 
 @pytest.fixture(scope="module")
-def data(store: Store):
-    return store.get_data("raster.ipynb", "fig:raster")
+def nb(store: Store):
+    return store.get_notebook("raster.ipynb")
 
 
-def test_data(data):
+def test_data(nb: Notebook):
+    data = nb.get_data("fig:raster")
     assert isinstance(data, dict)
     assert len(data) == 2
     assert "text/plain" in data
 
 
 @pytest.fixture(scope="module")
-def text(data: dict[str, str]):
-    return data["text/plain"]
+def text(nb: Notebook):
+    return nb.get_data("fig:raster")["text/plain"]
 
 
 def test_backend(text: str):

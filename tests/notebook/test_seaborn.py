@@ -1,15 +1,20 @@
 import pytest
 
+from nbstore.notebook import Notebook
 from nbstore.store import Store
 
 
-@pytest.fixture(scope="module", autouse=True)
-def _execute(store: Store):
-    return store.execute("seaborn.ipynb")
+@pytest.fixture(scope="module")
+def nb(store: Store):
+    nb = store.get_notebook("seaborn.ipynb")
+    assert not nb.is_executed
+    nb.execute()
+    assert nb.is_executed
+    return nb
 
 
-def test_outputs(store: Store):
-    outputs = store.get_outputs("seaborn.ipynb", "fig:seaborn")
+def test_outputs(nb: Notebook):
+    outputs = nb.get_outputs("fig:seaborn")
     assert isinstance(outputs, list)
     assert len(outputs) == 1
     assert isinstance(outputs[0], dict)
@@ -17,8 +22,8 @@ def test_outputs(store: Store):
     assert "text/plain" in outputs[0]["data"]
 
 
-def test_data(store: Store):
-    data = store.get_data("seaborn.ipynb", "fig:seaborn")
+def test_data(nb: Notebook):
+    data = nb.get_data("fig:seaborn")
     assert isinstance(data, dict)
     assert len(data) == 2
     assert "text/plain" in data
