@@ -20,13 +20,13 @@ class Notebook:
     node: NotebookNode
     is_executed: bool
 
-    def __init__(self, path: Path | str) -> None:
+    def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.node = nbformat.read(self.path, as_version=4)  # type: ignore
         self.is_executed = False
 
-    def write(self) -> None:
-        nbformat.write(self.node, self.path)
+    def write(self, path: str | Path | None = None) -> None:
+        nbformat.write(self.node, path or self.path)
 
     def get_cell(self, identifier: str) -> dict[str, Any]:
         return get_cell(self.node, identifier)
