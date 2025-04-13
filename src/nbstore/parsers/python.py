@@ -61,7 +61,7 @@ def _iter_main_blocks(text: str) -> Iterator[str]:
     yield from _iter(text, MAIN_PATTERN, dedent=True)
 
 
-CELL_PATTERN = re.compile(r"#\s+%%")
+CELL_PATTERN = re.compile(r"# %%")
 
 
 def _iter_cells(text: str) -> Iterator[str]:
