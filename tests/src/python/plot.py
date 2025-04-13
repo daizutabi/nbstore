@@ -1,18 +1,24 @@
-import matplotlib.pyplot as plt
+def plot(x: int):
+    print(x)  # noqa: T201
 
 
-def plot():
-    fig, ax = plt.subplots(figsize=(3, 3))
-    ax.plot([1, 2, 3])
-
-
-# %% #plot-module
-plot()
+# %% #plot-1
+plot(1)
 
 if __name__ == "__main__":
-    # %% #plot-main-1
-    plot()
+    # %% #plot-2
+
+    plot(2)
+
+# %% #plot-3
+plot(3)
 
 if __name__ == "__main__":
-    # %% #plot-main-2
-    plot()
+    #
+    # %% #plot-4
+
+    plot(4)
+
+# %% #plot-5
+
+plot(5)
