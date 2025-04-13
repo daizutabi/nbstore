@@ -22,7 +22,7 @@ class Notebook:
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        self.node = nbformat.read(self.path, as_version=4)  # type: ignore
+        self.node = create_notebook_node(self.path)
         self.is_executed = False
 
     def write(self, path: str | Path | None = None) -> None:
@@ -147,3 +147,11 @@ def convert(data: dict[str, str]) -> dict[str, str]:
         data["text/plain"] = nbstore.pgf.convert(text)
 
     return data
+
+
+def create_notebook_node(path: str | Path) -> NotebookNode:
+    path = Path(path)
+    if path.suffix == ".ipynb":
+        return nbformat.read(path, as_version=4)  # type: ignore
+
+    raise NotImplementedError
