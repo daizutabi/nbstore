@@ -170,3 +170,23 @@ def test_iter_parts():
     x = Element("", "id", ["a", "b"], {"k": "v"})
     assert list(x.iter_parts()) == ["a", "b", "k=v"]
     assert list(x.iter_parts(include_identifier=True)) == ["#id", "a", "b", "k=v"]
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected"),
+    [
+        ("```python {a #id1 b}\nprint(1)\n```", (["python", "a", "b"], "id1")),
+        ("```{.python #id2 b}\nprint(2)\n```", ([".python", "b"], "id2")),
+        ("```{python #id3 {a} }\nprint(3)\n```", (["python", "{a}"], "id3")),
+        ("```bash {#id4}\necho hello\n```", (["bash"], "id4")),
+        ("```python\nprint(4)\n```", (["python"], "")),
+        ('```{python #id3 "{a}" }\np\n```', (["python", '"{a}"'], "id3")),
+    ],
+)
+def test_markdown_code_blocks(markdown, expected):
+    from nbstore.parsers.markdown import CodeBlock, iter_elements
+
+    x = next(iter_elements(markdown))
+    assert isinstance(x, CodeBlock)
+    assert x.classes == expected[0]
+    assert x.identifier == expected[1]

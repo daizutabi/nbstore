@@ -210,13 +210,30 @@ class CodeBlock(Element):
             attr, code = body.split("\n", 1)
         else:
             attr, code = body, ""
-        attr = attr.strip()
 
-        if attr.startswith("{") and attr.endswith("}"):
-            attr = attr[1:-1]
+        attr = " ".join(_remove_braces(attr.strip()))
 
         identifier, classes, attributes = parse(attr)
         return cls(text, identifier, classes, attributes, code)
+
+
+def _remove_braces(text: str) -> Iterator[str]:
+    in_brace = False
+
+    for part in _split(text):
+        if part.startswith("{") and part.endswith("}") and in_brace:
+            yield part
+        elif part.startswith("{") and not in_brace:
+            if part.endswith("}"):
+                yield part[1:-1]
+            else:
+                yield part[1:]
+                in_brace = True
+        elif part.endswith("}") and in_brace:
+            yield part[:-1]
+            in_brace = False
+        else:
+            yield part
 
 
 @dataclass
