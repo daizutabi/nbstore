@@ -59,35 +59,35 @@ def test_blocks_3(blocks: list[str]):
 
 
 @pytest.fixture
-def cells(text):
-    from nbstore.parsers.python import iter_cells
+def sources(text):
+    from nbstore.parsers.python import iter_sources
 
-    return list(iter_cells(text))
-
-
-def test_cells(cells: list[str]):
-    assert len(cells) == 6
+    return list(iter_sources(text))
 
 
-def test_cells_0(cells: list[str]):
-    assert cells[0] == "\ndef plot(x: int):\n    print(x)\n"
+def test_sources(sources: list[str]):
+    assert len(sources) == 6
 
 
-def test_cells_1(cells: list[str]):
-    assert cells[1] == "# %% #plot-1\nplot(1)\n"
+def test_sources_0(sources: list[str]):
+    assert sources[0] == "\ndef plot(x: int):\n    print(x)"
 
 
-def test_cells_2(cells: list[str]):
-    assert cells[2] == "# %% #plot-2\n\nplot(2)\n"
+def test_sources_1(sources: list[str]):
+    assert sources[1] == "# %% #plot-1\nplot(1)"
 
 
-def test_cells_3(cells: list[str]):
-    assert cells[3] == "#"
+def test_sources_2(sources: list[str]):
+    assert sources[2] == "# %% #plot-2\n\nplot(2)"
 
 
-def test_cells_4(cells: list[str]):
-    assert cells[4] == "# %% #plot-3\n\nplot(3)\n"
+def test_sources_3(sources: list[str]):
+    assert sources[3] == "#"
 
 
-def test_cells_5(cells: list[str]):
-    assert cells[5] == "# %% #plot-4\n\nplot(4)\n\n"
+def test_sources_4(sources: list[str]):
+    assert sources[4] == "# %% #plot-3\n\nplot(3)"
+
+
+def test_sources_5(sources: list[str]):
+    assert sources[5] == "# %% #plot-4\n\nplot(4)"

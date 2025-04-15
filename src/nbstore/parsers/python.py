@@ -64,10 +64,11 @@ def _iter_main_blocks(text: str) -> Iterator[str]:
 CELL_PATTERN = re.compile(r"# %%")
 
 
-def _iter_cells(text: str) -> Iterator[str]:
+def _iter_sources(text: str) -> Iterator[str]:
     yield from _iter(text, CELL_PATTERN, dedent=False)
 
 
-def iter_cells(text: str) -> Iterator[str]:
+def iter_sources(text: str) -> Iterator[str]:
     for block in _iter_main_blocks(text):
-        yield from _iter_cells(block)
+        for source in _iter_sources(block):
+            yield source.rstrip()
