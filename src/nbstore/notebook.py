@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import nbformat
 
+import nbstore.parsers.python
 import nbstore.pgf
 
 from .content import get_mime_content
@@ -22,7 +23,7 @@ class Notebook:
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        self.node = nbformat.read(self.path, as_version=4)  # type: ignore
+        self.node = create_notebook_node(self.path)
         self.is_executed = False
 
     def write(self, path: str | Path | None = None) -> None:
@@ -85,8 +86,9 @@ class Notebook:
 def get_cell(node: NotebookNode, identifier: str) -> dict[str, Any]:
     for cell in node["cells"]:
         source: str = cell["source"]
-        if source.startswith(f"# #{identifier}\n"):
-            return cell
+        for prefix in ["# #", "# %% #"]:
+            if source.startswith(f"{prefix}{identifier}\n"):
+                return cell
 
     msg = f"Unknown identifier: {identifier}"
     raise ValueError(msg)
@@ -137,8 +139,15 @@ def get_data(outputs: list) -> dict[str, str]:
     return {}
 
 
-def get_language(node: NotebookNode) -> str:
-    return node["metadata"]["kernelspec"]["language"]
+def get_language(node: NotebookNode, default: str = "python") -> str:
+    metadata = node["metadata"]
+    if "kernelspec" in metadata:
+        return metadata["kernelspec"].get("language", default)
+
+    if "language_info" in metadata:
+        return metadata["language_info"].get("name", default)
+
+    return default
 
 
 def convert(data: dict[str, str]) -> dict[str, str]:
@@ -147,3 +156,27 @@ def convert(data: dict[str, str]) -> dict[str, str]:
         data["text/plain"] = nbstore.pgf.convert(text)
 
     return data
+
+
+def create_notebook_node(path: str | Path) -> NotebookNode:
+    path = Path(path)
+
+    if path.suffix == ".ipynb":
+        return nbformat.read(path, as_version=4)  # type: ignore
+
+    text = path.read_text()
+
+    if path.suffix == ".py":
+        return create_notebook_node_python(text)
+
+    raise NotImplementedError
+
+
+def create_notebook_node_python(text: str) -> NotebookNode:
+    node = nbformat.v4.new_notebook()
+
+    for source in nbstore.parsers.python.iter_sources(text):
+        cell = nbformat.v4.new_code_cell(source)
+        node["cells"].append(cell)
+
+    return node

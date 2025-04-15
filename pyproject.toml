@@ -83,6 +83,7 @@ ignore = [
   "ANN201",
   "ARG001",
   "ARG002",
+  "C901",
   "D",
   "D105",
   "D203",
@@ -98,7 +99,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*" = ["ANN", "ARG", "D", "FBT", "NPY", "PD", "PLR", "RUF", "S"]
-"**/notebooks/*" = ["ERA001", "T201"]
+"**/jupyter/*" = ["ERA001", "T201"]
 
 [tool.pyright]
 include = ["src", "tests"]
