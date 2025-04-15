@@ -283,3 +283,32 @@ def iter_elements(
 
         else:
             yield from iter_elements(text, elem[0], elem[1], classes[1:])
+
+
+def get_language(text: str) -> str | None:
+    """Get the language of the first code block in the text.
+
+    If there is no code block for a Jupyter notebook, return None.
+
+    Args:
+        text (str): The text to get the language from.
+
+    Returns:
+        str | None: The language of the first code block with an
+        identifier and a class, or None if there is no relevant code block.
+    """
+    languages = {}
+    identifiers = []
+
+    for elem in iter_elements(text):
+        if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:
+            language = elem.classes[0].removeprefix(".")
+            languages[elem.identifier] = language
+        elif isinstance(elem, Image) and elem.identifier:
+            identifiers.append(elem.identifier)
+
+    for identifier in identifiers:
+        if identifier in languages:
+            return languages[identifier]
+
+    return None

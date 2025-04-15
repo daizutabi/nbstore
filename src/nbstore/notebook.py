@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 import nbformat
 
+import nbstore.parsers.markdown
 import nbstore.parsers.python
 import nbstore.pgf
+from nbstore.parsers.markdown import CodeBlock
 
 from .content import get_mime_content
 
@@ -15,19 +17,25 @@ if TYPE_CHECKING:
 
     from nbformat import NotebookNode
 
+    from nbstore.parsers.markdown import Element
+
 
 class Notebook:
     path: Path
     node: NotebookNode
     is_executed: bool
 
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, language: str | None = None) -> None:
         self.path = Path(path)
-        self.node = create_notebook_node(self.path)
+        self.node = create_notebook_node(self.path, language)
         self.is_executed = False
 
     def write(self, path: str | Path | None = None) -> None:
-        nbformat.write(self.node, path or self.path)
+        path = Path(path or self.path)
+        if path.suffix == ".ipynb":
+            nbformat.write(self.node, path or self.path)
+        else:
+            raise NotImplementedError
 
     def get_cell(self, identifier: str) -> dict[str, Any]:
         return get_cell(self.node, identifier)
@@ -158,7 +166,7 @@ def convert(data: dict[str, str]) -> dict[str, str]:
     return data
 
 
-def create_notebook_node(path: str | Path) -> NotebookNode:
+def create_notebook_node(path: str | Path, language: str | None = None) -> NotebookNode:
     path = Path(path)
 
     if path.suffix == ".ipynb":
@@ -168,6 +176,13 @@ def create_notebook_node(path: str | Path) -> NotebookNode:
 
     if path.suffix == ".py":
         return create_notebook_node_python(text)
+
+    if path.suffix == ".md":
+        if not language:
+            msg = "language is required for markdown notebooks"
+            raise ValueError(msg)
+
+        return create_notebook_node_markdown(text, language)
 
     raise NotImplementedError
 
@@ -180,3 +195,27 @@ def create_notebook_node_python(text: str) -> NotebookNode:
         node["cells"].append(cell)
 
     return node
+
+
+def create_notebook_node_markdown(text: str, language: str) -> NotebookNode:
+    node = nbformat.v4.new_notebook()
+
+    for code_block in nbstore.parsers.markdown.iter_elements(text):
+        if _is_notebook_cell(code_block, language):
+            source = f"# #{code_block.identifier}\n{code_block.code}"
+            cell = nbformat.v4.new_code_cell(source)
+            node["cells"].append(cell)
+
+    node["metadata"]["language_info"] = {"name": language}
+
+    return node
+
+
+def _is_notebook_cell(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
+    if not isinstance(elem, CodeBlock):
+        return False
+
+    if not elem.identifier:
+        return False
+
+    return any(cls in (language, f".{language}") for cls in elem.classes)
