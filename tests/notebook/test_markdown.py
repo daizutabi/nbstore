@@ -4,7 +4,6 @@ import nbformat
 import pytest
 
 from nbstore.notebook import Notebook
-from nbstore.store import Store
 
 SOURCE = """\
 
@@ -79,38 +78,3 @@ def test_error():
 
     with pytest.raises(ValueError, match="language not found"):
         create_notebook_node_markdown("")
-
-
-@pytest.fixture
-def nb_add(store: Store):
-    yield store.get_notebook("add.ipynb")
-    store.clear()
-
-
-def test_from_store_without_source(nb_add: Notebook, store: Store):
-    nb = store.get_notebook("add.ipynb")
-    assert nb is nb_add
-
-
-def test_extend(nb_add: Notebook):
-    source = '```python #from_markdown\nprint("hello")\n```'
-    assert len(nb_add.node["cells"]) == 3
-    nb_add.extend(source)
-    assert len(nb_add.node["cells"]) == 4
-
-
-def test_extend_from_store(nb_add: Notebook, store: Store):
-    source = '```python #from_markdown\nprint("hello")\n```'
-    nb = store.get_notebook("add.ipynb", source)
-    assert not nb.equals(nb_add)
-    nb2 = store.get_notebook("add.ipynb", source)
-    assert nb2.equals(nb)
-
-
-def test_extend_from_store_not_equals(nb_add: Notebook, store: Store):
-    source = '```python #from_markdown\nprint("hello")\n```'
-    nb = store.get_notebook("add.ipynb", source)
-    assert not nb.equals(nb_add)
-    source = '```python #from_markdown\nprint("world")\n```'
-    nb2 = store.get_notebook("add.ipynb", source)
-    assert not nb2.equals(nb)
