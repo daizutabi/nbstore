@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import nbformat
 import pytest
 
 from nbstore.notebook import Notebook
@@ -66,6 +67,13 @@ def test_language(nb: Notebook):
     assert nb.get_language() == "python"
 
 
+def test_language_default():
+    from nbstore.notebook import get_language
+
+    nb = nbformat.v4.new_notebook()
+    assert get_language(nb, "julia") == "julia"
+
+
 def test_error():
     from nbstore.notebook import create_notebook_node_markdown
 
@@ -97,3 +105,12 @@ def test_extend_from_store(nb_add: Notebook, store: Store):
     assert not nb.equals(nb_add)
     nb2 = store.get_notebook("add.ipynb", source)
     assert nb2.equals(nb)
+
+
+def test_extend_from_store_not_equals(nb_add: Notebook, store: Store):
+    source = '```python #from_markdown\nprint("hello")\n```'
+    nb = store.get_notebook("add.ipynb", source)
+    assert not nb.equals(nb_add)
+    source = '```python #from_markdown\nprint("world")\n```'
+    nb2 = store.get_notebook("add.ipynb", source)
+    assert not nb2.equals(nb)
