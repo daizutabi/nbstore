@@ -1,3 +1,4 @@
+SOURCE = """\
 def plot(x: int):
     print(x)  # noqa: T201
 
@@ -22,3 +23,4 @@ if __name__ == "__main__":
 # %% #plot-5
 
 plot(5)
+"""

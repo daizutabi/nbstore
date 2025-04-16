@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import atexit
+import base64
 import copy
+import re
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import nbformat
-
-import nbstore.pgf
-
-from .content import get_mime_content
 
 if TYPE_CHECKING:
     from typing import Self
@@ -21,6 +22,21 @@ class Notebook:
     node: NotebookNode
     is_modified: bool = False
     is_executed: bool = False
+
+    def equals(self, other: Notebook) -> bool:
+        return equals(self.node, other.node)
+
+    def execute(self, timeout: int = 600) -> Self:
+        try:
+            from nbconvert.preprocessors import ExecutePreprocessor
+        except ModuleNotFoundError:  # no cov
+            msg = "nbconvert is not installed"
+            raise ModuleNotFoundError(msg) from None
+
+        ep = ExecutePreprocessor(timeout=timeout)
+        ep.preprocess(self.node)
+        self.is_executed = True
+        return self
 
     def get_language(self) -> str:
         return get_language(self.node)
@@ -61,7 +77,7 @@ class Notebook:
     def get_data(self, identifier: str) -> dict[str, str]:
         outputs = self.get_outputs(identifier)
         data = get_data(outputs)
-        return convert(data)
+        return convert_data(data)
 
     def add_data(self, identifier: str, mime: str, data: str) -> Self:
         outputs = self.get_outputs(identifier)
@@ -76,24 +92,20 @@ class Notebook:
             del output[mime]
         return self
 
-    def execute(self, timeout: int = 600) -> Self:
-        try:
-            from nbconvert.preprocessors import ExecutePreprocessor
-        except ModuleNotFoundError:  # no cov
-            msg = "nbconvert is not installed"
-            raise ModuleNotFoundError(msg) from None
-
-        ep = ExecutePreprocessor(timeout=timeout)
-        ep.preprocess(self.node)
-        self.is_executed = True
-        return self
-
     def get_mime_content(self, identifier: str) -> tuple[str, str | bytes] | None:
         data = self.get_data(identifier)
         return get_mime_content(data)
 
-    def equals(self, other: Notebook) -> bool:
-        return equals(self.node, other.node)
+
+def equals(node: NotebookNode, other: NotebookNode) -> bool:
+    if len(node["cells"]) != len(other["cells"]):
+        return False
+
+    for cell1, cell2 in zip(node["cells"], other["cells"], strict=False):
+        if cell1["source"] != cell2["source"]:
+            return False
+
+    return True
 
 
 def get_language(node: NotebookNode, default: str = "python") -> str:
@@ -163,20 +175,54 @@ def get_data(outputs: list) -> dict[str, str]:
     return {}
 
 
-def convert(data: dict[str, str]) -> dict[str, str]:
+def convert_data(data: dict[str, str]) -> dict[str, str]:
     text = data.get("text/plain")
     if text and text.startswith("%% Creator: Matplotlib, PGF backend"):
-        data["text/plain"] = nbstore.pgf.convert(text)
+        data["text/plain"] = convert_pgf(text)
 
     return data
 
 
-def equals(node: NotebookNode, other: NotebookNode) -> bool:
-    if len(node["cells"]) != len(other["cells"]):
-        return False
+BASE64_PATTERN = re.compile(r"\{data:image/(?P<ext>.*?);base64,(?P<b64>.*?)\}")
 
-    for cell1, cell2 in zip(node["cells"], other["cells"], strict=False):
-        if cell1["source"] != cell2["source"]:
-            return False
 
-    return True
+def convert_pgf(text: str) -> str:
+    def replace(match: re.Match) -> str:
+        ext = match.group("ext")
+        data = base64.b64decode(match.group("b64"))
+
+        with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as tmp:
+            tmp.write(data)
+            path = Path(tmp.name)
+
+        atexit.register(lambda p=path: p.unlink(missing_ok=True))
+
+        return f"{{{path.absolute()}}}"
+
+    return BASE64_PATTERN.sub(replace, text)
+
+
+def get_mime_content(data: dict[str, str]) -> tuple[str, str | bytes] | None:
+    """Get the content of a notebook cell.
+
+    Args:
+        data (dict[str, str]): The data of a notebook cell.
+
+    Returns:
+        tuple[str, str | bytes] | None: A tuple of the mime type and the content.
+    """
+    for mime in ["image/svg+xml", "text/html"]:
+        if text := data.get(mime):
+            return mime, text
+
+    if text := data.get("application/pdf"):
+        return "application/pdf", base64.b64decode(text)
+
+    for mime, text in data.items():
+        if mime.startswith("image/"):
+            return mime, base64.b64decode(text)
+
+    if "text/plain" in data:
+        return "text/plain", data["text/plain"]
+
+    return None

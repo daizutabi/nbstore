@@ -206,3 +206,57 @@ def test_image_code():
     assert x.url == "a.ipynb"
     assert x.identifier == "id"
     assert x.classes == ["b"]
+
+
+SOURCE_LANG = """\
+
+```python #_
+import matplotlib.pyplot as plt
+
+def plot(x):
+    plt.plot([x])
+```
+
+```julia #_
+println("hello")
+```
+
+```python #plot-1
+plot(1)
+```
+
+![alt](.md){#plot-1}
+
+"""
+
+
+def test_get_language():
+    from nbstore.parsers.markdown import get_language
+
+    assert get_language(SOURCE_LANG) == "python"
+
+
+def test_get_language_none():
+    from nbstore.parsers.markdown import get_language
+
+    assert get_language("") is None
+
+
+SOURCE_LANG_AFTER = """\
+
+![alt](.md){#plot-1}
+
+```python #_
+println("hello")
+```
+
+```julia #plot-1
+plot(1)
+```
+"""
+
+
+def test_get_language_after():
+    from nbstore.parsers.markdown import get_language
+
+    assert get_language(SOURCE_LANG_AFTER) == "julia"

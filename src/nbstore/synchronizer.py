@@ -34,7 +34,7 @@ class Parser:
             if isinstance(elem, Image | CodeBlock):
                 url = elem.url
                 if url.endswith(SUFFIXES) and url not in notebooks:
-                    notebooks[url] = self.store.get_notebook(elem.url)
+                    notebooks[url] = self.store.read(elem.url)
 
             if _is_notebook_cell(elem, language) and elem.url.endswith(SUFFIXES):
                 notebooks[elem.url] = elem.url
@@ -74,17 +74,17 @@ def get_urls(elems: Iterable[str | Element]) -> list[str]:
 #             node["cells"].append(cell)
 
 
-def _is_notebook_cell(
-    elem: Element | str,
-    language: str | None,
-) -> TypeGuard[CodeBlock]:
-    if language is None:
-        return False
+# def _is_notebook_cell(
+#     elem: Element | str,
+#     language: str | None,
+# ) -> TypeGuard[CodeBlock]:
+#     if language is None:
+#         return False
 
-    if not isinstance(elem, CodeBlock):
-        return False
+#     if not isinstance(elem, CodeBlock):
+#         return False
 
-    if not elem.identifier:
-        return False
+#     if not elem.identifier:
+#         return False
 
-    return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
+#     return bool(elem.classes and elem.classes[0] in (language, f".{language}"))

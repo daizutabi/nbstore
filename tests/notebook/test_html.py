@@ -6,7 +6,7 @@ from nbstore.store import Store
 
 @pytest.fixture(scope="module")
 def nb(store: Store):
-    nb = store.get_notebook("html.ipynb")
+    nb = store.read_notebook("html.ipynb")
     assert not nb.is_executed
     nb.execute()
     assert nb.is_executed

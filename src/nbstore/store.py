@@ -41,18 +41,31 @@ class Store:
         msg = f"Source file not found in any source directory: {url}"
         raise ValueError(msg)
 
-    def get_notebook(self, url: str) -> Notebook:
+    def read_notebook_node(self, url: str) -> NotebookNode:
         path = self.find_path(url)
         st_mtime = path.stat().st_mtime
 
         if self.st_mtime.get(path) != st_mtime:
-            self.nodes[path] = create_notebook_node(path)
+            self.nodes[path] = read_notebook_node(path)
             self.st_mtime[path] = st_mtime
 
-        return Notebook(self.nodes[path])
+        return self.nodes[path]
+
+    def read_notebook(self, url: str) -> Notebook:
+        return Notebook(self.read_notebook_node(url))
+
+    def write_notebook_node(self, url: str, notebook_node: NotebookNode) -> None:
+        path = self.find_path(url)
+        if path.suffix == ".ipynb":
+            nbformat.write(notebook_node, path)
+        else:
+            raise NotImplementedError
+
+    def write_notebook(self, url: str, notebook: Notebook) -> None:
+        self.write_notebook_node(url, notebook.node)
 
 
-def create_notebook_node(path: str | Path) -> NotebookNode:
+def read_notebook_node(path: str | Path) -> NotebookNode:
     path = Path(path)
 
     if path.suffix == ".ipynb":
@@ -61,12 +74,12 @@ def create_notebook_node(path: str | Path) -> NotebookNode:
     text = path.read_text()
 
     if path.suffix == ".py":
-        return create_notebook_node_python(text)
+        return convert_python_to_node(text)
 
     raise NotImplementedError
 
 
-def create_notebook_node_python(text: str) -> NotebookNode:
+def convert_python_to_node(text: str) -> NotebookNode:
     node = nbformat.v4.new_notebook()
     node["metadata"]["language_info"] = {"name": "python"}
 

@@ -6,7 +6,7 @@ from nbstore.store import Store
 
 @pytest.fixture(scope="module")
 def nb(store: Store):
-    return store.get_notebook("add.ipynb")
+    return store.read_notebook("add.ipynb")
 
 
 def test_add_delete(nb: Notebook):
@@ -38,3 +38,9 @@ def test_data_empty(nb: Notebook):
 def test_source_include_identifier(nb: Notebook):
     source = nb.get_source("add", include_identifier=True)
     assert source.startswith("# #add\n")
+
+
+def test_get_mime_content():
+    from nbstore.notebook import get_mime_content
+
+    assert get_mime_content({}) is None
