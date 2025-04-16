@@ -19,7 +19,9 @@ import pytest
         (" a  b  c ", ["a", "b", "c"]),
         ('"a b c"', ['"a b c"']),
         ("'a b c'", ["'a b c'"]),
+        ("`a b c`", ["`a b c`"]),
         ("a 'b c' d", ["a", "'b c'", "d"]),
+        ("a `b c` d", ["a", "`b c`", "d"]),
         ('a "b c" d', ["a", '"b c"', "d"]),
         (r"a 'b \'c\' d' e", ["a", r"'b \'c\' d'", "e"]),
         ("a=b", ["a=b"]),
@@ -59,7 +61,7 @@ def test_quote_single():
 SOURCE = """\
 ![a](b.ipynb){ #c .s k=v}
 
-abc ``![a](b){c}``
+abc `![a](b){c}`
 
 ```python
 ![a](b){c}
@@ -97,18 +99,10 @@ def test_elements_image(elements):
     assert x.attributes == {"k": "v"}
 
 
-def test_elements_inline_code(elements):
-    from nbstore.parsers.markdown import InlineCode
-
-    x = elements[2]
-    assert isinstance(x, InlineCode)
-    assert x.code == "![a](b){c}"
-
-
 def test_elements_code_block(elements):
     from nbstore.parsers.markdown import CodeBlock
 
-    x = elements[4]
+    x = elements[2]
     assert isinstance(x, CodeBlock)
     assert x.code == "![a](b){c}"
     assert x.identifier == ""
@@ -119,7 +113,7 @@ def test_elements_code_block(elements):
 def test_elements_code_block_with_attributes(elements):
     from nbstore.parsers.markdown import CodeBlock
 
-    x = elements[6]
+    x = elements[4]
     assert isinstance(x, CodeBlock)
     assert x.code == "xyz"
     assert x.identifier == "id"
@@ -130,7 +124,7 @@ def test_elements_code_block_with_attributes(elements):
 def test_elements_code_block_without_body(elements):
     from nbstore.parsers.markdown import CodeBlock
 
-    x = elements[8]
+    x = elements[6]
     assert isinstance(x, CodeBlock)
     assert x.code == ""
     assert x.identifier == ""
@@ -141,7 +135,7 @@ def test_elements_code_block_without_body(elements):
 def test_elements_code_block_without_attributes(elements):
     from nbstore.parsers.markdown import CodeBlock
 
-    x = elements[10]
+    x = elements[8]
     assert isinstance(x, CodeBlock)
     assert x.code == "noattr"
     assert x.identifier == ""
@@ -151,7 +145,7 @@ def test_elements_code_block_without_attributes(elements):
 
 @pytest.mark.parametrize(
     ("index", "expected"),
-    [(1, "\n\nabc `"), (3, "`\n\n"), (5, "\n\n")],
+    [(1, "\n\nabc `![a](b){c}`\n\n"), (3, "\n\n"), (5, "\n\n")],
 )
 def test_elements_str(elements, index, expected):
     x = elements[index]
@@ -190,6 +184,28 @@ def test_markdown_code_blocks(markdown, expected):
     assert isinstance(x, CodeBlock)
     assert x.classes == expected[0]
     assert x.identifier == expected[1]
+
+
+def test_code_block_url():
+    from nbstore.parsers.markdown import CodeBlock, iter_elements
+
+    x = next(iter_elements("```python a.ipynb#id c\nprint(1)\n```\n"))
+    assert isinstance(x, CodeBlock)
+    assert x.code == "print(1)"
+    assert x.url == "a.ipynb"
+    assert x.identifier == "id"
+    assert x.classes == ["python", "c"]
+
+
+def test_image_code():
+    from nbstore.parsers.markdown import Image, iter_elements
+
+    x = next(iter_elements("![alt](a.ipynb){#id `co de` b}"))
+    assert isinstance(x, Image)
+    assert x.code == "co de"
+    assert x.url == "a.ipynb"
+    assert x.identifier == "id"
+    assert x.classes == ["b"]
 
 
 SOURCE_LANG = """\

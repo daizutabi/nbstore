@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 
 
 def _split(text: str) -> Iterator[str]:
-    in_single_quote = False
-    in_double_quote = False
+    in_quotes = {'"': False, "'": False, "`": False}
+
     chars = list(text)
     start = 0
 
@@ -20,20 +20,15 @@ def _split(text: str) -> Iterator[str]:
         if cursor > 0 and chars[cursor - 1] == "\\":
             continue
 
-        if char == "'":
-            if in_single_quote:
-                yield text[start : cursor + 1]
-                start = cursor + 1
-            in_single_quote = not in_single_quote
+        for q, in_ in in_quotes.items():
+            if char == q:
+                if in_:
+                    yield text[start : cursor + 1]
+                    start = cursor + 1
+                in_quotes[q] = not in_
 
-        elif char == '"':
-            if in_double_quote:
-                yield text[start : cursor + 1]
-                start = cursor + 1
-            in_double_quote = not in_double_quote
-
-        elif char == " ":
-            if not in_single_quote and not in_double_quote:
+        if char == " ":
+            if not any(in_quotes.values()):
                 if start < cursor:
                     yield text[start:cursor]
                 start = cursor + 1
@@ -157,6 +152,8 @@ class Element:
     identifier: str
     classes: list[str]
     attributes: dict[str, str]
+    code: str = ""
+    url: str = ""
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
@@ -200,8 +197,6 @@ class CodeBlock(Element):
         re.MULTILINE | re.DOTALL,
     )
 
-    code: str
-
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
         text = match.group(0)
@@ -213,9 +208,18 @@ class CodeBlock(Element):
             attr, code = body, ""
 
         attr = " ".join(_remove_braces(attr.strip()))
-
         identifier, classes, attributes = parse(attr)
-        return cls(text, identifier, classes, attributes, code)
+
+        url = ""
+
+        if not identifier:
+            for k, cls_ in enumerate(classes):
+                if "#" in cls_:
+                    url, identifier = cls_.split("#", 1)
+                    classes = classes[:k] + classes[k + 1 :]
+                    break
+
+        return cls(text, identifier, classes, attributes, code=code, url=url)
 
 
 def _remove_braces(text: str) -> Iterator[str]:
@@ -238,33 +242,34 @@ def _remove_braces(text: str) -> Iterator[str]:
 
 
 @dataclass
-class InlineCode(Element):
-    pattern: ClassVar[re.Pattern] = re.compile(r"`([^`]+?)`", re.DOTALL)
-
-    code: str
-
-    @classmethod
-    def from_match(cls, match: re.Match[str]) -> Self:
-        return cls(match.group(0), "", [], {}, match.group(1))
-
-
-@dataclass
 class Image(Element):
     pattern = re.compile(
-        r"!\[(?P<alt>.*?)\]\((?P<url>.*?)\)\{(?P<attr>.*?)\}",
+        r"(?<![`])!\[(?P<alt>.*?)\]\((?P<url>.*?)\)\{(?P<attr>.*?)\}(?![`])",
         re.MULTILINE | re.DOTALL,
     )
 
-    alt: str
-    url: str
+    alt: str = ""
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
+        identifier, classes, attributes = parse(match.group("attr"))
+
+        code = ""
+
+        for k, cls_ in enumerate(classes):
+            if cls_.startswith("`") and cls_.endswith("`"):
+                code = cls_[1:-1]
+                classes = classes[:k] + classes[k + 1 :]
+                break
+
         return cls(
             match.group(0),
-            *parse(match.group("attr")),
-            match.group("alt"),
-            match.group("url"),
+            identifier,
+            classes,
+            attributes,
+            code=code,
+            url=match.group("url"),
+            alt=match.group("alt"),
         )
 
 
@@ -272,7 +277,7 @@ def iter_elements(
     text: str,
     pos: int = 0,
     endpos: int | None = None,
-    classes: tuple[type[Element], ...] = (CodeBlock, InlineCode, Image),
+    classes: tuple[type[Element], ...] = (CodeBlock, Image),
 ) -> Iterator[Element | str]:
     if not classes:
         yield text[pos:endpos]
