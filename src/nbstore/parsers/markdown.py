@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import cache
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
@@ -285,6 +286,7 @@ def iter_elements(
             yield from iter_elements(text, elem[0], elem[1], classes[1:])
 
 
+@cache
 def get_language(text: str) -> str | None:
     """Get the language of the first code block in the text.
 
@@ -304,7 +306,9 @@ def get_language(text: str) -> str | None:
         if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:
             language = elem.classes[0].removeprefix(".")
             languages[elem.identifier] = language
-        elif isinstance(elem, Image) and elem.identifier:
+        elif isinstance(elem, Image) and elem.identifier and elem.url in (".md", ""):
+            if elem.identifier in languages:
+                return languages[elem.identifier]
             identifiers.append(elem.identifier)
 
     for identifier in identifiers:

@@ -224,3 +224,23 @@ def test_get_language_none():
     from nbstore.parsers.markdown import get_language
 
     assert get_language("") is None
+
+
+SOURCE_LANG_2 = """\
+
+![alt](.md){#plot-1}
+
+```python #_
+println("hello")
+```
+
+```julia #plot-1
+plot(1)
+```
+"""
+
+
+def test_get_language_2():
+    from nbstore.parsers.markdown import get_language
+
+    assert get_language(SOURCE_LANG_2) == "julia"

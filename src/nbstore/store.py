@@ -24,6 +24,11 @@ class Store:
         self.notebooks = {}
         self.st_mtime = {}
 
+    def clear(self) -> None:
+        self.active_path = None
+        self.notebooks.clear()
+        self.st_mtime.clear()
+
     def find_path(self, url: str) -> Path:
         if not url:
             if self.active_path:
@@ -48,15 +53,26 @@ class Store:
 
         return self.st_mtime[path] != path.stat().st_mtime
 
-    def get_notebook(self, url: str) -> Notebook:
+    def get_notebook(self, url: str, source: str | None = None) -> Notebook:
         path = self.find_path(url)
         st_mtime = path.stat().st_mtime
 
-        if self.st_mtime.get(path) != st_mtime:
-            self.st_mtime[path] = st_mtime
-            self.notebooks[path] = Notebook(path)
+        if self.st_mtime.get(path) == st_mtime and not source:
+            return self.notebooks[path]
 
-        return self.notebooks[path]
+        self.st_mtime[path] = st_mtime
+        nb = Notebook(path)
+
+        if not source:
+            self.notebooks[path] = nb
+            return nb
+
+        nb.extend(source)
+        if nb.equals(self.notebooks[path]):
+            return self.notebooks[path]
+
+        self.notebooks[path] = nb
+        return nb
 
     def needs_execution(self, url: str) -> bool:
         notebook = self.get_notebook(url)

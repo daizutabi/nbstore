@@ -25,17 +25,16 @@ class Notebook:
     node: NotebookNode
     is_executed: bool
 
-    def __init__(self, path: str | Path, language: str | None = None) -> None:
+    def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        self.node = create_notebook_node(self.path, language)
+        self.node = create_notebook_node(self.path)
         self.is_executed = False
 
-    def write(self, path: str | Path | None = None) -> None:
-        path = Path(path or self.path)
-        if path.suffix == ".ipynb":
-            nbformat.write(self.node, path or self.path)
-        else:
-            raise NotImplementedError
+    def extend(self, text: str) -> None:
+        extend_notebook_cells(self.node, text)
+
+    def equals(self, other: Notebook) -> bool:
+        return equals(self.node, other.node)
 
     def get_cell(self, identifier: str) -> dict[str, Any]:
         return get_cell(self.node, identifier)
@@ -89,6 +88,13 @@ class Notebook:
     def get_mime_content(self, identifier: str) -> tuple[str, str | bytes] | None:
         data = self.get_data(identifier)
         return get_mime_content(data)
+
+    def write(self, path: str | Path | None = None) -> None:
+        path = Path(path or self.path)
+        if path.suffix == ".ipynb":
+            nbformat.write(self.node, path or self.path)
+        else:
+            raise NotImplementedError
 
 
 def get_cell(node: NotebookNode, identifier: str) -> dict[str, Any]:
@@ -166,7 +172,7 @@ def convert(data: dict[str, str]) -> dict[str, str]:
     return data
 
 
-def create_notebook_node(path: str | Path, language: str | None = None) -> NotebookNode:
+def create_notebook_node(path: str | Path) -> NotebookNode:
     path = Path(path)
 
     if path.suffix == ".ipynb":
@@ -178,17 +184,14 @@ def create_notebook_node(path: str | Path, language: str | None = None) -> Noteb
         return create_notebook_node_python(text)
 
     if path.suffix == ".md":
-        if not language:
-            msg = "language is required for markdown notebooks"
-            raise ValueError(msg)
-
-        return create_notebook_node_markdown(text, language)
+        return create_notebook_node_markdown(text)
 
     raise NotImplementedError
 
 
 def create_notebook_node_python(text: str) -> NotebookNode:
     node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": "python"}
 
     for source in nbstore.parsers.python.iter_sources(text):
         cell = nbformat.v4.new_code_cell(source)
@@ -197,18 +200,27 @@ def create_notebook_node_python(text: str) -> NotebookNode:
     return node
 
 
-def create_notebook_node_markdown(text: str, language: str) -> NotebookNode:
+def create_notebook_node_markdown(text: str) -> NotebookNode:
+    language = nbstore.parsers.markdown.get_language(text)
+
+    if not language:
+        msg = "language not found"
+        raise ValueError(msg)
+
     node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": language}
+    extend_notebook_cells(node, text)
+    return node
+
+
+def extend_notebook_cells(node: NotebookNode, text: str) -> None:
+    language = get_language(node)
 
     for code_block in nbstore.parsers.markdown.iter_elements(text):
         if _is_notebook_cell(code_block, language):
             source = f"# #{code_block.identifier}\n{code_block.code}"
             cell = nbformat.v4.new_code_cell(source)
             node["cells"].append(cell)
-
-    node["metadata"]["language_info"] = {"name": language}
-
-    return node
 
 
 def _is_notebook_cell(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
@@ -218,4 +230,15 @@ def _is_notebook_cell(elem: Element | str, language: str) -> TypeGuard[CodeBlock
     if not elem.identifier:
         return False
 
-    return any(cls in (language, f".{language}") for cls in elem.classes)
+    return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
+
+
+def equals(node: NotebookNode, other: NotebookNode) -> bool:
+    if len(node["cells"]) != len(other["cells"]):
+        return False
+
+    for cell1, cell2 in zip(node["cells"], other["cells"], strict=False):
+        if cell1["source"] != cell2["source"]:
+            return False
+
+    return True
