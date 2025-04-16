@@ -231,15 +231,15 @@ plot(1)
 
 
 def test_get_language():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.parsers.markdown import get_language, iter_elements
 
-    assert get_language(SOURCE_LANG) == "python"
+    assert get_language(iter_elements(SOURCE_LANG)) == "python"
 
 
 def test_get_language_none():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.parsers.markdown import get_language, iter_elements
 
-    assert get_language("") is None
+    assert get_language(iter_elements("")) is None
 
 
 SOURCE_LANG_2 = """\
@@ -257,9 +257,9 @@ plot(1)
 
 
 def test_get_language_2():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.parsers.markdown import get_language, iter_elements
 
-    assert get_language(SOURCE_LANG_2) == "julia"
+    assert get_language(iter_elements(SOURCE_LANG_2)) == "julia"
 
 
 SOURCE_LANG_URL = """\

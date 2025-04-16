@@ -1,14 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeGuard
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
-import nbformat
-
-import nbstore.parsers.markdown
-import nbstore.parsers.python
 import nbstore.pgf
-from nbstore.parsers.markdown import CodeBlock
 
 from .content import get_mime_content
 
@@ -17,21 +12,11 @@ if TYPE_CHECKING:
 
     from nbformat import NotebookNode
 
-    from nbstore.parsers.markdown import Element
 
-
+@dataclass
 class Notebook:
-    path: Path
     node: NotebookNode
-    is_executed: bool
-
-    def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
-        self.node = create_notebook_node(self.path)
-        self.is_executed = False
-
-    def extend(self, text: str) -> None:
-        extend_notebook_cells(self.node, text)
+    is_executed: bool = False
 
     def equals(self, other: Notebook) -> bool:
         return equals(self.node, other.node)
@@ -88,13 +73,6 @@ class Notebook:
     def get_mime_content(self, identifier: str) -> tuple[str, str | bytes] | None:
         data = self.get_data(identifier)
         return get_mime_content(data)
-
-    def write(self, path: str | Path | None = None) -> None:
-        path = Path(path or self.path)
-        if path.suffix == ".ipynb":
-            nbformat.write(self.node, path or self.path)
-        else:
-            raise NotImplementedError
 
 
 def get_cell(node: NotebookNode, identifier: str) -> dict[str, Any]:
@@ -170,67 +148,6 @@ def convert(data: dict[str, str]) -> dict[str, str]:
         data["text/plain"] = nbstore.pgf.convert(text)
 
     return data
-
-
-def create_notebook_node(path: str | Path) -> NotebookNode:
-    path = Path(path)
-
-    if path.suffix == ".ipynb":
-        return nbformat.read(path, as_version=4)  # type: ignore
-
-    text = path.read_text()
-
-    if path.suffix == ".py":
-        return create_notebook_node_python(text)
-
-    if path.suffix == ".md":
-        return create_notebook_node_markdown(text)
-
-    raise NotImplementedError
-
-
-def create_notebook_node_python(text: str) -> NotebookNode:
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": "python"}
-
-    for source in nbstore.parsers.python.iter_sources(text):
-        cell = nbformat.v4.new_code_cell(source)
-        node["cells"].append(cell)
-
-    return node
-
-
-def create_notebook_node_markdown(text: str) -> NotebookNode:
-    language = nbstore.parsers.markdown.get_language(text)
-
-    if not language:
-        msg = "language not found"
-        raise ValueError(msg)
-
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": language}
-    extend_notebook_cells(node, text)
-    return node
-
-
-def extend_notebook_cells(node: NotebookNode, text: str) -> None:
-    language = get_language(node)
-
-    for code_block in nbstore.parsers.markdown.iter_elements(text):
-        if _is_notebook_cell(code_block, language):
-            source = f"# #{code_block.identifier}\n{code_block.code}"
-            cell = nbformat.v4.new_code_cell(source)
-            node["cells"].append(cell)
-
-
-def _is_notebook_cell(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
-    if not isinstance(elem, CodeBlock):
-        return False
-
-    if not elem.identifier:
-        return False
-
-    return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
 
 
 def equals(node: NotebookNode, other: NotebookNode) -> bool:

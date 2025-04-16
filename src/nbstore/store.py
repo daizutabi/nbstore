@@ -3,10 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import nbformat
+
+import nbstore.parsers.markdown
+import nbstore.parsers.python
+
 from .notebook import Notebook
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+    from nbformat import NotebookNode
 
 
 class Store:
@@ -23,6 +30,9 @@ class Store:
         self.st_mtime = {}
 
     def find_path(self, url: str) -> Path:
+        if Path(url).is_absolute():
+            return Path(url)
+
         for src_dir in self.src_dirs:
             abs_path = (src_dir / url).absolute()
             if abs_path.exists():
@@ -36,7 +46,33 @@ class Store:
         st_mtime = path.stat().st_mtime
 
         if self.st_mtime.get(path) != st_mtime:
+            node = create_notebook_node(path)
+            self.notebooks[path] = Notebook(node)
             self.st_mtime[path] = st_mtime
-            self.notebooks[path] = Notebook(path)
 
         return self.notebooks[path]
+
+
+def create_notebook_node(path: str | Path) -> NotebookNode:
+    path = Path(path)
+
+    if path.suffix == ".ipynb":
+        return nbformat.read(path, as_version=4)  # type: ignore
+
+    text = path.read_text()
+
+    if path.suffix == ".py":
+        return create_notebook_node_python(text)
+
+    raise NotImplementedError
+
+
+def create_notebook_node_python(text: str) -> NotebookNode:
+    node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": "python"}
+
+    for source in nbstore.parsers.python.iter_sources(text):
+        cell = nbformat.v4.new_code_cell(source)
+        node["cells"].append(cell)
+
+    return node

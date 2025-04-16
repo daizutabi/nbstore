@@ -44,7 +44,10 @@ def path(tmp_path_factory: pytest.TempPathFactory):
 
 @pytest.fixture(scope="module")
 def nb(path: Path):
-    return Notebook(path)
+    from nbstore.store import create_notebook_node
+
+    node = create_notebook_node(path)
+    return Notebook(node)
 
 
 @pytest.fixture(scope="module")
@@ -71,10 +74,3 @@ def test_language_default():
 
     nb = nbformat.v4.new_notebook()
     assert get_language(nb, "julia") == "julia"
-
-
-def test_error():
-    from nbstore.notebook import create_notebook_node_markdown
-
-    with pytest.raises(ValueError, match="language not found"):
-        create_notebook_node_markdown("")

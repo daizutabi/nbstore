@@ -24,16 +24,6 @@ def test_language(nb: Notebook):
     assert nb.get_language() == "python"
 
 
-def test_write(nb: Notebook, tmp_path: Path):
-    path = tmp_path / "tmp.ipynb"
-    nb.write(path)
-    assert path.exists()
-    nb2 = Notebook(path)
-    data = nb2.get_mime_content("add")
-    assert data
-    assert data[0] == "image/png"
-
-
 def test_cell_error(nb: Notebook):
     with pytest.raises(ValueError, match="Unknown identifier: unknown"):
         nb.get_cell("unknown")
