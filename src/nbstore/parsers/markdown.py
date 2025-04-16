@@ -278,17 +278,27 @@ def iter_elements(
     pos: int = 0,
     endpos: int | None = None,
     classes: tuple[type[Element], ...] = (CodeBlock, Image),
+    url: str = "",
 ) -> Iterator[Element | str]:
     if not classes:
         yield text[pos:endpos]
         return
 
     for elem in classes[0].iter_elements(text, pos, endpos):
+        if isinstance(elem, Image):
+            if not elem.url:
+                elem.url = url
+            else:
+                url = elem.url
+
+            if elem.identifier == "_":  # Just set url, do not yield
+                continue
+
         if isinstance(elem, Element):
             yield elem
 
         else:
-            yield from iter_elements(text, elem[0], elem[1], classes[1:])
+            yield from iter_elements(text, elem[0], elem[1], classes[1:], url)
 
 
 @cache

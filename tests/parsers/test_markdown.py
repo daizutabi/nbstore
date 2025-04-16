@@ -260,3 +260,21 @@ def test_get_language_2():
     from nbstore.parsers.markdown import get_language
 
     assert get_language(SOURCE_LANG_2) == "julia"
+
+
+SOURCE_LANG_URL = """\
+![alt](a.ipynb){#_}
+![alt](){#id1}
+![alt](b.ipynb){#id2}
+![alt](){#id3}
+"""
+
+
+def test_iter_elements_url():
+    from nbstore.parsers.markdown import iter_elements
+
+    images = list(iter_elements(SOURCE_LANG_URL))[1::2]
+    assert len(images) == 3
+    assert images[0].url == "a.ipynb"  # type: ignore
+    assert images[1].url == "b.ipynb"  # type: ignore
+    assert images[2].url == "b.ipynb"  # type: ignore
