@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import cache
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
@@ -210,13 +211,30 @@ class CodeBlock(Element):
             attr, code = body.split("\n", 1)
         else:
             attr, code = body, ""
-        attr = attr.strip()
 
-        if attr.startswith("{") and attr.endswith("}"):
-            attr = attr[1:-1]
+        attr = " ".join(_remove_braces(attr.strip()))
 
         identifier, classes, attributes = parse(attr)
         return cls(text, identifier, classes, attributes, code)
+
+
+def _remove_braces(text: str) -> Iterator[str]:
+    in_brace = False
+
+    for part in _split(text):
+        if part.startswith("{") and part.endswith("}") and in_brace:
+            yield part
+        elif part.startswith("{") and not in_brace:
+            if part.endswith("}"):
+                yield part[1:-1]
+            else:
+                yield part[1:]
+                in_brace = True
+        elif part.endswith("}") and in_brace:
+            yield part[:-1]
+            in_brace = False
+        else:
+            yield part
 
 
 @dataclass
@@ -266,3 +284,35 @@ def iter_elements(
 
         else:
             yield from iter_elements(text, elem[0], elem[1], classes[1:])
+
+
+@cache
+def get_language(text: str) -> str | None:
+    """Get the language of the first code block in the text.
+
+    If there is no code block for a Jupyter notebook, return None.
+
+    Args:
+        text (str): The text to get the language from.
+
+    Returns:
+        str | None: The language of the first code block with an
+        identifier and a class, or None if there is no relevant code block.
+    """
+    languages = {}
+    identifiers = []
+
+    for elem in iter_elements(text):
+        if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:
+            language = elem.classes[0].removeprefix(".")
+            languages[elem.identifier] = language
+        elif isinstance(elem, Image) and elem.identifier and elem.url in (".md", ""):
+            if elem.identifier in languages:
+                return languages[elem.identifier]
+            identifiers.append(elem.identifier)
+
+    for identifier in identifiers:
+        if identifier in languages:
+            return languages[identifier]
+
+    return None
