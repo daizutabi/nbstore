@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
+
+import nbformat
 
 import nbstore.pgf
 
@@ -16,13 +19,29 @@ if TYPE_CHECKING:
 @dataclass
 class Notebook:
     node: NotebookNode
+    is_modified: bool = False
     is_executed: bool = False
 
-    def equals(self, other: Notebook) -> bool:
-        return equals(self.node, other.node)
+    def get_language(self) -> str:
+        return get_language(self.node)
 
     def get_cell(self, identifier: str) -> dict[str, Any]:
         return get_cell(self.node, identifier)
+
+    def add_cell(self, identifier: str, source: str) -> Self:
+        if not self.is_modified:
+            self.node = copy.deepcopy(self.node)
+            self.is_modified = True
+
+        if (
+            not source.startswith("#")
+            or f"#{identifier}" not in source.split("\n", 1)[0]
+        ):
+            source = f"# #{identifier}\n{source}"
+
+        cell = nbformat.v4.new_code_cell(source)
+        self.node["cells"].append(cell)
+        return self
 
     def get_source(
         self,
@@ -44,19 +63,18 @@ class Notebook:
         data = get_data(outputs)
         return convert(data)
 
-    def add_data(self, identifier: str, mime: str, data: str) -> None:
+    def add_data(self, identifier: str, mime: str, data: str) -> Self:
         outputs = self.get_outputs(identifier)
         if output := get_data_by_type(outputs, "display_data"):
             output[mime] = data
+        return self
 
-    def delete_data(self, identifier: str, mime: str) -> None:
+    def delete_data(self, identifier: str, mime: str) -> Self:
         outputs = self.get_outputs(identifier)
         output = get_data_by_type(outputs, "display_data")
         if output and mime in output:
             del output[mime]
-
-    def get_language(self) -> str:
-        return get_language(self.node)
+        return self
 
     def execute(self, timeout: int = 600) -> Self:
         try:
@@ -73,6 +91,20 @@ class Notebook:
     def get_mime_content(self, identifier: str) -> tuple[str, str | bytes] | None:
         data = self.get_data(identifier)
         return get_mime_content(data)
+
+    def equals(self, other: Notebook) -> bool:
+        return equals(self.node, other.node)
+
+
+def get_language(node: NotebookNode, default: str = "python") -> str:
+    metadata = node["metadata"]
+    if "kernelspec" in metadata:
+        return metadata["kernelspec"].get("language", default)
+
+    if "language_info" in metadata:
+        return metadata["language_info"].get("name", default)
+
+    return default
 
 
 def get_cell(node: NotebookNode, identifier: str) -> dict[str, Any]:
@@ -129,17 +161,6 @@ def get_data(outputs: list) -> dict[str, str]:
             return data
 
     return {}
-
-
-def get_language(node: NotebookNode, default: str = "python") -> str:
-    metadata = node["metadata"]
-    if "kernelspec" in metadata:
-        return metadata["kernelspec"].get("language", default)
-
-    if "language_info" in metadata:
-        return metadata["language_info"].get("name", default)
-
-    return default
 
 
 def convert(data: dict[str, str]) -> dict[str, str]:

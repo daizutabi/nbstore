@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterator
     from typing import Self
 
 
@@ -298,34 +298,3 @@ def iter_elements(
 
         else:
             yield from iter_elements(text, elem[0], elem[1], classes[1:], url)
-
-
-def get_language(elems: Iterable[str | Element]) -> str | None:
-    """Get the language of the first code block in the text.
-
-    If there is no code block for a Jupyter notebook, return None.
-
-    Args:
-        text (str): The text to get the language from.
-
-    Returns:
-        str | None: The language of the first code block with an
-        identifier and a class, or None if there is no relevant code block.
-    """
-    languages = {}
-    identifiers = []
-
-    for elem in elems:
-        if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:
-            language = elem.classes[0].removeprefix(".")
-            languages[elem.identifier] = language
-        elif isinstance(elem, Image) and elem.identifier and elem.url in (".md", "."):
-            if elem.identifier in languages:
-                return languages[elem.identifier]
-            identifiers.append(elem.identifier)
-
-    for identifier in identifiers:
-        if identifier in languages:
-            return languages[identifier]
-
-    return None

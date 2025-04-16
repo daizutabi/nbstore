@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class Store:
     src_dirs: list[Path]
-    notebooks: dict[Path, Notebook]
+    nodes: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
 
     def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
@@ -26,7 +26,7 @@ class Store:
             src_dirs = [src_dirs]
 
         self.src_dirs = [Path(src_dir) for src_dir in src_dirs]
-        self.notebooks = {}
+        self.nodes = {}
         self.st_mtime = {}
 
     def find_path(self, url: str) -> Path:
@@ -46,11 +46,10 @@ class Store:
         st_mtime = path.stat().st_mtime
 
         if self.st_mtime.get(path) != st_mtime:
-            node = create_notebook_node(path)
-            self.notebooks[path] = Notebook(node)
+            self.nodes[path] = create_notebook_node(path)
             self.st_mtime[path] = st_mtime
 
-        return self.notebooks[path]
+        return Notebook(self.nodes[path])
 
 
 def create_notebook_node(path: str | Path) -> NotebookNode:
