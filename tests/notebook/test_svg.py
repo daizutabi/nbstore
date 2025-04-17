@@ -1,39 +1,38 @@
+import nbformat
 import pytest
+from nbformat import NotebookNode
 
-from nbstore.notebook import Notebook
-from nbstore.store import Store
+SOURCE_FORMATTER = """\
+import matplotlib_inline.backend_inline
+from nbstore.formatter import set_formatter
+matplotlib_inline.backend_inline.set_matplotlib_formats("retina")
+set_formatter("matplotlib", "svg")
+"""
+
+SOURCE_FIG = """\
+# #fig
+import matplotlib.pyplot as plt
+plt.plot([1, 10, 100], [-1, 0, 1])
+"""
 
 
 @pytest.fixture(scope="module")
-def nb(store: Store):
-    return store.read_notebook("svg.ipynb")
+def nb():
+    from nbstore.notebook import execute
+
+    nb = nbformat.v4.new_notebook()
+    nb["cells"] = [
+        nbformat.v4.new_code_cell(SOURCE_FORMATTER),
+        nbformat.v4.new_code_cell(SOURCE_FIG),
+    ]
+    execute(nb)
+    return nb
 
 
-def test_cell(nb: Notebook):
-    cell = nb.get_cell("fig:svg")
-    assert isinstance(cell, dict)
-    assert "cell_type" in cell
+def test_data(nb: NotebookNode):
+    from nbstore.notebook import get_data
 
-
-def test_source(nb: Notebook):
-    source = nb.get_source("fig:svg")
-    assert isinstance(source, str)
-    assert "plot" in source
-
-
-def test_outputs(nb: Notebook):
-    outputs = nb.get_outputs("fig:svg")
-    assert isinstance(outputs, list)
-    assert len(outputs) == 2
-    assert isinstance(outputs[0], dict)
-    assert outputs[0]["output_type"] == "execute_result"
-    assert "text/plain" in outputs[0]["data"]
-    assert isinstance(outputs[1], dict)
-    assert outputs[1]["output_type"] == "display_data"
-
-
-def test_data(nb: Notebook):
-    data = nb.get_data("fig:svg")
+    data = get_data(nb, "fig")
     assert isinstance(data, dict)
     assert len(data) == 3
     assert "text/plain" in data
@@ -41,8 +40,10 @@ def test_data(nb: Notebook):
     assert data["image/svg+xml"].startswith('<?xml version="1.0"')
 
 
-def test_mime_content(nb: Notebook):
-    mime_content = nb.get_mime_content("fig:svg")
+def test_mime_content(nb: NotebookNode):
+    from nbstore.notebook import get_mime_content
+
+    mime_content = get_mime_content(nb, "fig")
     assert isinstance(mime_content, tuple)
     mime, content = mime_content
     assert mime == "image/svg+xml"

@@ -1,3 +1,9 @@
+"""Core functionality for reading and managing notebook files.
+
+This module provides the main interface for accessing notebook content
+from various file formats and managing notebook instances in memory.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,10 +11,8 @@ from typing import TYPE_CHECKING
 
 import nbformat
 
-import nbstore.parsers.markdown
-import nbstore.parsers.python
-
-from .notebook import Notebook
+import nbstore.markdown
+import nbstore.python
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -17,12 +21,32 @@ if TYPE_CHECKING:
 
 
 class Store:
+    """Manage notebook files from one or more source directories.
+
+    Provides a centralized interface for reading notebook files and caching
+    their content for efficient access. Automatically reloads files when
+    they have been modified on disk.
+
+    Attributes:
+        src_dirs: List of source directories to search for notebook files.
+        nodes: Dictionary mapping file paths to their notebook nodes.
+        st_mtime: Dictionary mapping file paths to their last modification times.
+        url: String representing the last accessed URL.
+    """
+
     src_dirs: list[Path]
     nodes: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
     url: str
 
     def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
+        """Initialize a new Store instance.
+
+        Args:
+            src_dirs (Path | str | Iterable[Path | str]): One or more directories
+                to search for notebook files. Can be a single path or a collection
+                of paths.
+        """
         if isinstance(src_dirs, (str, Path)):
             src_dirs = [src_dirs]
 
@@ -32,6 +56,20 @@ class Store:
         self.url = ""
 
     def find_path(self, url: str) -> Path:
+        """Find the absolute path of a notebook file.
+
+        Searches for the notebook file in the source directories. If the URL is
+        an absolute path, it is returned directly.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+
+        Returns:
+            Path: The absolute path to the notebook file.
+
+        Raises:
+            ValueError: If the file cannot be found in any source directory.
+        """
         if Path(url).is_absolute():
             return Path(url)
 
@@ -43,33 +81,63 @@ class Store:
         msg = f"Source file not found in any source directory: {url}"
         raise ValueError(msg)
 
-    def read_notebook_node(self, url: str) -> NotebookNode:
+    def read(self, url: str) -> NotebookNode:
+        """Read a notebook file and return its content.
+
+        If the file has been modified since it was last read, it is reloaded.
+        If no URL is provided, the last URL is used.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+
+        Returns:
+            NotebookNode: The notebook content.
+        """
         url = self.url = url or self.url
 
         path = self.find_path(url)
         st_mtime = path.stat().st_mtime
 
         if self.st_mtime.get(path) != st_mtime:
-            self.nodes[path] = read_notebook_node(path)
+            self.nodes[path] = read(path)
             self.st_mtime[path] = st_mtime
 
         return self.nodes[path]
 
-    def read_notebook(self, url: str) -> Notebook:
-        return Notebook(self.read_notebook_node(url))
+    def write(self, url: str, notebook_node: NotebookNode) -> None:
+        """Write a notebook node to a file.
 
-    def write_notebook_node(self, url: str, notebook_node: NotebookNode) -> None:
+        Currently only supports writing to .ipynb files.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+            notebook_node (NotebookNode): The notebook content to write.
+
+        Raises:
+            NotImplementedError: If the file format is not supported for writing.
+        """
         path = self.find_path(url)
+
         if path.suffix == ".ipynb":
-            nbformat.write(notebook_node, path)
-        else:
-            raise NotImplementedError
+            return nbformat.write(notebook_node, path)
 
-    def write_notebook(self, url: str, notebook: Notebook) -> None:
-        self.write_notebook_node(url, notebook.node)
+        raise NotImplementedError
 
 
-def read_notebook_node(path: str | Path) -> NotebookNode:
+def read(path: str | Path) -> NotebookNode:
+    """Read a notebook file and return its content.
+
+    Supports .ipynb, .py, and .md file formats.
+
+    Args:
+        path (str | Path): The path to the notebook file.
+
+    Returns:
+        NotebookNode: The notebook content.
+
+    Raises:
+        NotImplementedError: If the file format is not supported.
+    """
     path = Path(path)
 
     if path.suffix == ".ipynb":
@@ -78,39 +146,9 @@ def read_notebook_node(path: str | Path) -> NotebookNode:
     text = path.read_text()
 
     if path.suffix == ".py":
-        return convert_python_to_node(text)
+        return nbstore.python.new_notebook(text)
 
     if path.suffix == ".md":
-        return convert_markdown_to_node(text)
+        return nbstore.markdown.new_notebook(text)
 
     raise NotImplementedError
-
-
-def convert_python_to_node(text: str) -> NotebookNode:
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": "python"}
-
-    for source in nbstore.parsers.python.iter_sources(text):
-        cell = nbformat.v4.new_code_cell(source)
-        node["cells"].append(cell)
-
-    return node
-
-
-def convert_markdown_to_node(text: str) -> NotebookNode:
-    language = nbstore.parsers.markdown.get_language(text)
-
-    if not language:
-        msg = "language not found"
-        raise ValueError(msg)
-
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": language}
-
-    for code_block in nbstore.parsers.markdown.iter_elements(text):
-        if nbstore.parsers.markdown.is_target_code_block(code_block, language):
-            source = f"# #{code_block.identifier}\n{code_block.code}"
-            cell = nbformat.v4.new_code_cell(source)
-            node["cells"].append(cell)
-
-    return node
