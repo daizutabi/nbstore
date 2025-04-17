@@ -39,11 +39,11 @@ class Store:
     st_mtime: dict[Path, float]
     url: str
 
-    def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
+    def __init__(self, src_dirs: str | Path | Iterable[str | Path]) -> None:
         """Initialize a new Store instance.
 
         Args:
-            src_dirs (Path | str | Iterable[Path | str]): One or more directories
+            src_dirs (str | Path | Iterable[str | Path]): One or more directories
                 to search for notebook files. Can be a single path or a collection
                 of paths.
         """
