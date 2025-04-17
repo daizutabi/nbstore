@@ -210,24 +210,6 @@ def test_image_code():
     assert x.classes == ["b"]
 
 
-SOURCE_ITER = """\
-![alt](a.ipynb){#_}
-![alt](){#id1}
-![alt](b.ipynb){#id2}
-![alt](b.ipynb){#id3}
-"""
-
-
-def test_iter_elements():
-    from nbstore.markdown import Image, parse
-
-    x = [e for e in parse(SOURCE_ITER) if isinstance(e, Image)]
-    assert len(x) == 3
-    assert x[0].url == "a.ipynb"
-    assert x[1].url == "b.ipynb"
-    assert x[2].url == "b.ipynb"
-
-
 SOURCE_LANG = """\
 
 ```python #_

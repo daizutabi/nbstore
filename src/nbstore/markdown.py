@@ -394,8 +394,7 @@ def parse(
     pos: int = 0,
     endpos: int | None = None,
     classes: tuple[type[Element], ...] = (CodeBlock, Image),
-    url: str = "",
-) -> Iterator[Element | str]:
+) -> Iterator[CodeBlock | Image | str]:
     """Parse the text and yield elements.
 
     Finds all occurrences of the specified element types in the text and
@@ -406,7 +405,6 @@ def parse(
         pos (int): The starting position.
         endpos (int | None): The ending position.
         classes (tuple[type[Element], ...]): The element types to find.
-        url (str): The URL to use for elements with relative URLs.
 
     Yields:
         Element | str: Element instances or text segments.
@@ -416,20 +414,14 @@ def parse(
         return
 
     for elem in classes[0].iter_elements(text, pos, endpos):
-        if isinstance(elem, Image):
-            if not elem.url:
-                elem.url = url
-            else:
-                url = elem.url
+        if isinstance(elem, tuple):
+            yield from parse(text, elem[0], elem[1], classes[1:])
 
-            if elem.identifier == "_":  # Just set url, do not yield
-                continue
-
-        if isinstance(elem, Element):
+        elif isinstance(elem, CodeBlock | Image):
             yield elem
 
         else:
-            yield from parse(text, elem[0], elem[1], classes[1:], url)
+            yield elem.text
 
 
 @cache
