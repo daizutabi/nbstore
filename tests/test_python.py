@@ -61,9 +61,9 @@ def test_blocks_3(blocks: list[str]):
 
 @pytest.fixture
 def sources(text):
-    from nbstore.python import iter_sources
+    from nbstore.python import parse
 
-    return list(iter_sources(text))
+    return list(parse(text))
 
 
 def test_sources(sources: list[str]):

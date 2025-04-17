@@ -122,14 +122,14 @@ def _iter_sources(text: str) -> Iterator[str]:
     yield from _iter(text, CELL_PATTERN, dedent=False)
 
 
-def iter_sources(text: str) -> Iterator[str]:
-    """Iterate through all sources in the text.
+def parse(text: str) -> Iterator[str]:
+    """Parse the text and yield sources.
 
     First splits the text at 'if __name__ == "__main__":' lines,
     then splits each block at '# %%' cell markers.
 
     Args:
-        text (str): The text to iterate through.
+        text (str): The text to parse.
 
     Yields:
         str: The sources.
@@ -154,7 +154,7 @@ def new_notebook(text: str) -> NotebookNode:
     node = nbformat.v4.new_notebook()
     node["metadata"]["language_info"] = {"name": "python"}
 
-    for source in iter_sources(text):
+    for source in parse(text):
         cell = nbformat.v4.new_code_cell(source)
         node["cells"].append(cell)
 

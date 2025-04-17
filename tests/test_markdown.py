@@ -84,9 +84,9 @@ noattr
 
 @pytest.fixture(scope="module")
 def elements():
-    from nbstore.markdown import iter_elements
+    from nbstore.markdown import parse
 
-    return list(iter_elements(SOURCE))
+    return list(parse(SOURCE))
 
 
 def test_elements_image(elements):
@@ -180,18 +180,18 @@ def test_iter_parts():
     ],
 )
 def test_markdown_code_blocks(markdown, expected):
-    from nbstore.markdown import CodeBlock, iter_elements
+    from nbstore.markdown import CodeBlock, parse
 
-    x = next(iter_elements(markdown))
+    x = next(parse(markdown))
     assert isinstance(x, CodeBlock)
     assert x.classes == expected[0]
     assert x.identifier == expected[1]
 
 
 def test_code_block_url():
-    from nbstore.markdown import CodeBlock, iter_elements
+    from nbstore.markdown import CodeBlock, parse
 
-    x = next(iter_elements("```python a.ipynb#id c\nprint(1)\n```\n"))
+    x = next(parse("```python a.ipynb#id c\nprint(1)\n```\n"))
     assert isinstance(x, CodeBlock)
     assert x.code == "print(1)"
     assert x.url == "a.ipynb"
@@ -200,9 +200,9 @@ def test_code_block_url():
 
 
 def test_image_code():
-    from nbstore.markdown import Image, iter_elements
+    from nbstore.markdown import Image, parse
 
-    x = next(iter_elements("![alt](a.ipynb){#id `co de` b}"))
+    x = next(parse("![alt](a.ipynb){#id `co de` b}"))
     assert isinstance(x, Image)
     assert x.code == "co de"
     assert x.url == "a.ipynb"
@@ -219,9 +219,9 @@ SOURCE_ITER = """\
 
 
 def test_iter_elements():
-    from nbstore.markdown import Image, iter_elements
+    from nbstore.markdown import Image, parse
 
-    x = [e for e in iter_elements(SOURCE_ITER) if isinstance(e, Image)]
+    x = [e for e in parse(SOURCE_ITER) if isinstance(e, Image)]
     assert len(x) == 3
     assert x[0].url == "a.ipynb"
     assert x[1].url == "b.ipynb"
