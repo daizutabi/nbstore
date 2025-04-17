@@ -333,6 +333,9 @@ def get_language(text: str) -> str:
         if identifier in languages:
             return languages[identifier]
 
+    if languages:
+        return next(iter(languages.values()))
+
     return ""
 
 
