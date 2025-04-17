@@ -1,5 +1,4 @@
 from .formatter import set_formatter
-from .notebook import Notebook
-from .store import Store
+from .store import Store, read
 
-__all__ = ["Notebook", "Store", "set_formatter"]
+__all__ = ["Store", "read", "set_formatter"]

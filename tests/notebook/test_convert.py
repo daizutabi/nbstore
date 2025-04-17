@@ -37,9 +37,9 @@ def test_findall(text: str):
 
 
 def test_convert(text: str):
-    from nbstore.notebook import convert_pgf
+    from nbstore.notebook import _convert_pgf
 
-    text = convert_pgf(text)
+    text = _convert_pgf(text)
 
     k = 0
 
@@ -56,6 +56,6 @@ def test_convert(text: str):
 
 
 def test_convert_none():
-    from nbstore.notebook import convert_pgf
+    from nbstore.notebook import _convert_pgf
 
-    assert convert_pgf("abc") == "abc"
+    assert _convert_pgf("abc") == "abc"

@@ -5,9 +5,13 @@ from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING, ClassVar, TypeGuard
 
+import nbformat
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Self
+
+    from nbformat import NotebookNode
 
 
 def _split(text: str) -> Iterator[str]:
@@ -343,3 +347,22 @@ def is_target_code_block(elem: Element | str, language: str) -> TypeGuard[CodeBl
         return False
 
     return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
+
+
+def new_notebook(text: str) -> NotebookNode:
+    language = get_language(text)
+
+    if not language:
+        msg = "language not found"
+        raise ValueError(msg)
+
+    node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": language}
+
+    for code_block in iter_elements(text):
+        if is_target_code_block(code_block, language):
+            source = f"# #{code_block.identifier}\n{code_block.code}"
+            cell = nbformat.v4.new_code_cell(source)
+            node["cells"].append(cell)
+
+    return node

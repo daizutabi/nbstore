@@ -1,4 +1,6 @@
+import nbformat
 import pytest
+from nbformat import NotebookNode
 
 
 @pytest.mark.parametrize(
@@ -32,7 +34,7 @@ import pytest
     ],
 )
 def test_split(text, expected):
-    from nbstore.parsers.markdown import split
+    from nbstore.markdown import split
 
     assert list(split(text)) == expected
 
@@ -47,13 +49,13 @@ def test_split(text, expected):
     ],
 )
 def test_quote(value, expected):
-    from nbstore.parsers.markdown import _quote
+    from nbstore.markdown import _quote
 
     assert _quote(value) == expected
 
 
 def test_quote_single():
-    from nbstore.parsers.markdown import _quote
+    from nbstore.markdown import _quote
 
     assert _quote('a "b" c') == "'a {} c'".format('"b"')
 
@@ -82,13 +84,13 @@ noattr
 
 @pytest.fixture(scope="module")
 def elements():
-    from nbstore.parsers.markdown import iter_elements
+    from nbstore.markdown import iter_elements
 
     return list(iter_elements(SOURCE))
 
 
 def test_elements_image(elements):
-    from nbstore.parsers.markdown import Image
+    from nbstore.markdown import Image
 
     x = elements[0]
     assert isinstance(x, Image)
@@ -100,7 +102,7 @@ def test_elements_image(elements):
 
 
 def test_elements_code_block(elements):
-    from nbstore.parsers.markdown import CodeBlock
+    from nbstore.markdown import CodeBlock
 
     x = elements[2]
     assert isinstance(x, CodeBlock)
@@ -111,7 +113,7 @@ def test_elements_code_block(elements):
 
 
 def test_elements_code_block_with_attributes(elements):
-    from nbstore.parsers.markdown import CodeBlock
+    from nbstore.markdown import CodeBlock
 
     x = elements[4]
     assert isinstance(x, CodeBlock)
@@ -122,7 +124,7 @@ def test_elements_code_block_with_attributes(elements):
 
 
 def test_elements_code_block_without_body(elements):
-    from nbstore.parsers.markdown import CodeBlock
+    from nbstore.markdown import CodeBlock
 
     x = elements[6]
     assert isinstance(x, CodeBlock)
@@ -133,7 +135,7 @@ def test_elements_code_block_without_body(elements):
 
 
 def test_elements_code_block_without_attributes(elements):
-    from nbstore.parsers.markdown import CodeBlock
+    from nbstore.markdown import CodeBlock
 
     x = elements[8]
     assert isinstance(x, CodeBlock)
@@ -159,7 +161,7 @@ def test_join(elements):
 
 
 def test_iter_parts():
-    from nbstore.parsers.markdown import Element
+    from nbstore.markdown import Element
 
     x = Element("", "id", ["a", "b"], {"k": "v"})
     assert list(x.iter_parts()) == ["a", "b", "k=v"]
@@ -178,7 +180,7 @@ def test_iter_parts():
     ],
 )
 def test_markdown_code_blocks(markdown, expected):
-    from nbstore.parsers.markdown import CodeBlock, iter_elements
+    from nbstore.markdown import CodeBlock, iter_elements
 
     x = next(iter_elements(markdown))
     assert isinstance(x, CodeBlock)
@@ -187,7 +189,7 @@ def test_markdown_code_blocks(markdown, expected):
 
 
 def test_code_block_url():
-    from nbstore.parsers.markdown import CodeBlock, iter_elements
+    from nbstore.markdown import CodeBlock, iter_elements
 
     x = next(iter_elements("```python a.ipynb#id c\nprint(1)\n```\n"))
     assert isinstance(x, CodeBlock)
@@ -198,7 +200,7 @@ def test_code_block_url():
 
 
 def test_image_code():
-    from nbstore.parsers.markdown import Image, iter_elements
+    from nbstore.markdown import Image, iter_elements
 
     x = next(iter_elements("![alt](a.ipynb){#id `co de` b}"))
     assert isinstance(x, Image)
@@ -217,7 +219,7 @@ SOURCE_ITER = """\
 
 
 def test_iter_elements():
-    from nbstore.parsers.markdown import Image, iter_elements
+    from nbstore.markdown import Image, iter_elements
 
     x = [e for e in iter_elements(SOURCE_ITER) if isinstance(e, Image)]
     assert len(x) == 3
@@ -249,13 +251,13 @@ plot(1)
 
 
 def test_get_language():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.markdown import get_language
 
     assert get_language(SOURCE_LANG) == "python"
 
 
 def test_get_language_none():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.markdown import get_language
 
     assert get_language("") == ""
 
@@ -275,7 +277,7 @@ plot(1)
 
 
 def test_get_language_after():
-    from nbstore.parsers.markdown import get_language
+    from nbstore.markdown import get_language
 
     assert get_language(SOURCE_LANG_AFTER) == "julia"
 
@@ -285,26 +287,94 @@ def test_get_language_after():
     [("julia", True), ("python", False), (".julia", True), (".python", False)],
 )
 def test_is_target_code_block(language, expected):
-    from nbstore.parsers.markdown import CodeBlock, is_target_code_block
+    from nbstore.markdown import CodeBlock, is_target_code_block
 
     code = CodeBlock("", "id", [language], {})
     assert is_target_code_block(code, "julia") == expected
 
 
 def test_is_target_code_block_no_language():
-    from nbstore.parsers.markdown import is_target_code_block
+    from nbstore.markdown import is_target_code_block
 
     assert not is_target_code_block("", "")
 
 
 def test_is_target_code_block_str():
-    from nbstore.parsers.markdown import is_target_code_block
+    from nbstore.markdown import is_target_code_block
 
     assert not is_target_code_block("python", "python")
 
 
 def test_is_target_code_block_no_identifier():
-    from nbstore.parsers.markdown import CodeBlock, is_target_code_block
+    from nbstore.markdown import CodeBlock, is_target_code_block
 
     code = CodeBlock("", "", [], {})
     assert not is_target_code_block(code, "python")
+
+
+SOURCE_NOTEBOOK = """\
+
+```python #_
+import matplotlib.pyplot as plt
+
+def plot(x):
+    plt.plot([x])
+```
+
+```julia #_
+println("hello")
+```
+
+```python #plot-1
+plot(1)
+```
+
+```{.python #plot-2}
+plot(2)
+```
+
+```python
+plot(3)
+```
+
+![alt](.md){#plot-2}
+
+"""
+
+
+@pytest.fixture(scope="module")
+def nb():
+    from nbstore.markdown import new_notebook
+
+    return new_notebook(SOURCE_NOTEBOOK)
+
+
+@pytest.fixture(scope="module")
+def test_len(nb: NotebookNode):
+    assert len(nb["cells"]) == 4
+
+
+def test_source_1(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-1") == "plot(1)"
+
+
+def test_source_2(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-2") == "plot(2)"
+
+
+def test_language_default():
+    from nbstore.notebook import get_language
+
+    nb = nbformat.v4.new_notebook()
+    assert get_language(nb, "julia") == "julia"
+
+
+def test_language_error():
+    from nbstore.markdown import new_notebook
+
+    with pytest.raises(ValueError, match="language not found"):
+        new_notebook("hello")

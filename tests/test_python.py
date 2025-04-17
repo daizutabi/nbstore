@@ -1,4 +1,5 @@
 import pytest
+from nbformat import NotebookNode
 
 SOURCE = """\
 
@@ -33,7 +34,7 @@ def text():
 
 @pytest.fixture
 def blocks(text):
-    from nbstore.parsers.python import _iter_main_blocks
+    from nbstore.python import _iter_main_blocks
 
     return list(_iter_main_blocks(text))
 
@@ -60,7 +61,7 @@ def test_blocks_3(blocks: list[str]):
 
 @pytest.fixture
 def sources(text):
-    from nbstore.parsers.python import iter_sources
+    from nbstore.python import iter_sources
 
     return list(iter_sources(text))
 
@@ -91,3 +92,77 @@ def test_sources_4(sources: list[str]):
 
 def test_sources_5(sources: list[str]):
     assert sources[5] == "# %% #plot-4\n\nplot(4)"
+
+
+SOURCE_NOTEBOOK = """\
+def plot(x: int):
+    print(x)  # noqa: T201
+
+
+# %% #plot-1
+plot(1)
+
+if __name__ == "__main__":
+    # %% #plot-2
+
+    plot(2)
+
+# %% #plot-3
+plot(3)
+
+if __name__ == "__main__":
+    #
+    # %% #plot-4
+
+    plot(4)
+
+# %% #plot-5
+
+plot(5)
+"""
+
+
+@pytest.fixture(scope="module")
+def nb():
+    from nbstore.python import new_notebook
+
+    return new_notebook(SOURCE_NOTEBOOK)
+
+
+def test_len(nb: NotebookNode):
+    assert len(nb["cells"]) == 7
+
+
+def test_cell_0(nb: NotebookNode):
+    assert nb.cells[0]["source"].startswith("def plot(x: int):\n    print(x)")
+    assert nb.cells[4]["source"] == "#"
+
+
+def test_cell_1(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-1") == "plot(1)"
+
+
+def test_cell_2(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-2") == "\nplot(2)"
+
+
+def test_cell_3(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-3") == "plot(3)"
+
+
+def test_cell_4(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-4") == "\nplot(4)"
+
+
+def test_cell_5(nb: NotebookNode):
+    from nbstore.notebook import get_source
+
+    assert get_source(nb, "plot-5") == "\nplot(5)"

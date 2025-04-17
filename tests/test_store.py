@@ -1,7 +1,6 @@
 import nbformat
 import pytest
 
-from nbstore.notebook import Notebook
 from nbstore.store import Store
 
 
@@ -23,7 +22,7 @@ def test_write_notebook(tmp_path_factory: pytest.TempPathFactory):
 
     node = nbformat.v4.new_notebook()
     node["cells"] = [nbformat.v4.new_code_cell("# #id\nprint(1)")]
-    store.write_notebook("a.ipynb", Notebook(node))
+    store.write("a.ipynb", Notebook(node))
 
-    nb = store.read_notebook(path.as_posix())
+    nb = store.read(path.as_posix())
     assert nb.get_source("id") == "print(1)"

@@ -4,8 +4,12 @@ import re
 import textwrap
 from typing import TYPE_CHECKING
 
+import nbformat
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from nbformat import NotebookNode
 
 
 def _split_indent(text: str) -> Iterator[str]:
@@ -72,3 +76,14 @@ def iter_sources(text: str) -> Iterator[str]:
     for block in _iter_main_blocks(text):
         for source in _iter_sources(block):
             yield source.rstrip()
+
+
+def new_notebook(text: str) -> NotebookNode:
+    node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": "python"}
+
+    for source in iter_sources(text):
+        cell = nbformat.v4.new_code_cell(source)
+        node["cells"].append(cell)
+
+    return node
