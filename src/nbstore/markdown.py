@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Convert Markdown files to Jupyter notebooks.
 
 This module provides utilities for parsing Markdown files and converting them
@@ -7,6 +5,8 @@ to notebook format, with support for code blocks, images, and custom attributes.
 It implements a robust parser for Markdown syntax including code blocks with
 language specification and attributes.
 """
+
+from __future__ import annotations
 
 import re
 from dataclasses import dataclass

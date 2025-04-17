@@ -1,3 +1,9 @@
+"""Convert Python scripts to Jupyter notebooks.
+
+This module provides utilities for parsing Python scripts and converting them
+to notebook format, with support for cell markers and code block extraction.
+"""
+
 from __future__ import annotations
 
 import re
@@ -10,12 +16,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from nbformat import NotebookNode
-
-"""Convert Python scripts to Jupyter notebooks.
-
-This module provides utilities for parsing Python scripts and converting them
-to notebook format, with support for cell markers and code block extraction.
-"""
 
 
 def _split_indent(text: str) -> Iterator[str]:

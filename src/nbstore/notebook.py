@@ -1,3 +1,10 @@
+"""Utilities for working with Jupyter notebook content.
+
+This module provides functions for extracting and manipulating content
+from notebook cells, with a focus on cell identification by unique
+identifiers and data extraction from cell outputs.
+"""
+
 from __future__ import annotations
 
 import atexit
@@ -11,13 +18,6 @@ import nbformat
 
 if TYPE_CHECKING:
     from nbformat import NotebookNode
-
-"""Utilities for working with Jupyter notebook content.
-
-This module provides functions for extracting and manipulating content
-from notebook cells, with a focus on cell identification by unique
-identifiers and data extraction from cell outputs.
-"""
 
 
 def get_language(nb: NotebookNode, default: str = "python") -> str:

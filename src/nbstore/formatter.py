@@ -1,3 +1,10 @@
+"""Formatters for visualization outputs in notebooks.
+
+This module provides functions for converting visualization outputs from
+various libraries (matplotlib, seaborn, holoviews) to different formats
+(PGF, PDF, SVG), and utilities for registering these formatters with IPython.
+"""
+
 from __future__ import annotations
 
 import base64
@@ -13,13 +20,6 @@ if TYPE_CHECKING:
     from IPython.lib.pretty import RepresentationPrinter
     from matplotlib.figure import Figure
     from seaborn.objects import Plot
-
-"""Formatters for visualization outputs in notebooks.
-
-This module provides functions for converting visualization outputs from
-various libraries (matplotlib, seaborn, holoviews) to different formats
-(PGF, PDF, SVG), and utilities for registering these formatters with IPython.
-"""
 
 
 def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> None:

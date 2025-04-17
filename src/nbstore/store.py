@@ -1,3 +1,9 @@
+"""Core functionality for reading and managing notebook files.
+
+This module provides the main interface for accessing notebook content
+from various file formats and managing notebook instances in memory.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,12 +18,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from nbformat import NotebookNode
-
-"""Core functionality for reading and managing notebook files.
-
-This module provides the main interface for accessing notebook content
-from various file formats and managing notebook instances in memory.
-"""
 
 
 class Store:
