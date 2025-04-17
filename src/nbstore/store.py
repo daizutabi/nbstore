@@ -20,6 +20,7 @@ class Store:
     src_dirs: list[Path]
     nodes: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
+    url: str
 
     def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
         if isinstance(src_dirs, (str, Path)):
@@ -28,6 +29,7 @@ class Store:
         self.src_dirs = [Path(src_dir) for src_dir in src_dirs]
         self.nodes = {}
         self.st_mtime = {}
+        self.url = ""
 
     def find_path(self, url: str) -> Path:
         if Path(url).is_absolute():
@@ -42,6 +44,8 @@ class Store:
         raise ValueError(msg)
 
     def read_notebook_node(self, url: str) -> NotebookNode:
+        url = self.url = url or self.url
+
         path = self.find_path(url)
         st_mtime = path.stat().st_mtime
 
