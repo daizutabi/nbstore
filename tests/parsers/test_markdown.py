@@ -208,6 +208,24 @@ def test_image_code():
     assert x.classes == ["b"]
 
 
+SOURCE_ITER = """\
+![alt](a.ipynb){#_}
+![alt](){#id1}
+![alt](b.ipynb){#id2}
+![alt](b.ipynb){#id3}
+"""
+
+
+def test_iter_elements():
+    from nbstore.parsers.markdown import Image, iter_elements
+
+    x = [e for e in iter_elements(SOURCE_ITER) if isinstance(e, Image)]
+    assert len(x) == 3
+    assert x[0].url == "a.ipynb"
+    assert x[1].url == "b.ipynb"
+    assert x[2].url == "b.ipynb"
+
+
 SOURCE_LANG = """\
 
 ```python #_
@@ -239,7 +257,7 @@ def test_get_language():
 def test_get_language_none():
     from nbstore.parsers.markdown import get_language
 
-    assert get_language("") is None
+    assert get_language("") == ""
 
 
 SOURCE_LANG_AFTER = """\
@@ -260,3 +278,33 @@ def test_get_language_after():
     from nbstore.parsers.markdown import get_language
 
     assert get_language(SOURCE_LANG_AFTER) == "julia"
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [("julia", True), ("python", False), (".julia", True), (".python", False)],
+)
+def test_is_target_code_block(language, expected):
+    from nbstore.parsers.markdown import CodeBlock, is_target_code_block
+
+    code = CodeBlock("", "id", [language], {})
+    assert is_target_code_block(code, "julia") == expected
+
+
+def test_is_target_code_block_no_language():
+    from nbstore.parsers.markdown import is_target_code_block
+
+    assert not is_target_code_block("", "")
+
+
+def test_is_target_code_block_str():
+    from nbstore.parsers.markdown import is_target_code_block
+
+    assert not is_target_code_block("python", "python")
+
+
+def test_is_target_code_block_no_identifier():
+    from nbstore.parsers.markdown import CodeBlock, is_target_code_block
+
+    code = CodeBlock("", "", [], {})
+    assert not is_target_code_block(code, "python")

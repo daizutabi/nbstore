@@ -76,6 +76,9 @@ def read_notebook_node(path: str | Path) -> NotebookNode:
     if path.suffix == ".py":
         return convert_python_to_node(text)
 
+    if path.suffix == ".md":
+        return convert_markdown_to_node(text)
+
     raise NotImplementedError
 
 
@@ -86,5 +89,24 @@ def convert_python_to_node(text: str) -> NotebookNode:
     for source in nbstore.parsers.python.iter_sources(text):
         cell = nbformat.v4.new_code_cell(source)
         node["cells"].append(cell)
+
+    return node
+
+
+def convert_markdown_to_node(text: str) -> NotebookNode:
+    language = nbstore.parsers.markdown.get_language(text)
+
+    if not language:
+        msg = "language not found"
+        raise ValueError(msg)
+
+    node = nbformat.v4.new_notebook()
+    node["metadata"]["language_info"] = {"name": language}
+
+    for code_block in nbstore.parsers.markdown.iter_elements(text):
+        if nbstore.parsers.markdown.is_target_code_block(code_block, language):
+            source = f"# #{code_block.identifier}\n{code_block.code}"
+            cell = nbformat.v4.new_code_cell(source)
+            node["cells"].append(cell)
 
     return node

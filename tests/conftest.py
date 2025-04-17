@@ -8,10 +8,10 @@ from nbstore.store import Store
 
 
 @pytest.fixture(scope="session")
-def src_dirs() -> list[Path]:
-    return [Path(__file__).parent / "src"]
+def src_dir() -> Path:
+    return Path(__file__).parent / "src"
 
 
 @pytest.fixture(scope="session")
-def store(src_dirs: list[Path]) -> Store:
-    return Store(src_dirs)
+def store(src_dir: Path) -> Store:
+    return Store(src_dir)

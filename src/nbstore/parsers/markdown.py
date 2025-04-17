@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar
+from functools import cache
+from typing import TYPE_CHECKING, ClassVar, TypeGuard
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -300,7 +301,8 @@ def iter_elements(
             yield from iter_elements(text, elem[0], elem[1], classes[1:], url)
 
 
-def get_language(text: str) -> str | None:
+@cache
+def get_language(text: str) -> str:
     """Get the language of the first code block in the text.
 
     If there is no code block for a Jupyter notebook, return None.
@@ -309,8 +311,7 @@ def get_language(text: str) -> str | None:
         text (str): The text to get the language from.
 
     Returns:
-        str | None: The language of the first code block with an
-        identifier and a class, or None if there is no relevant code block.
+        str: The language of the first code block with an identifier and a class.
     """
     languages = {}
     identifiers = []
@@ -328,4 +329,17 @@ def get_language(text: str) -> str | None:
         if identifier in languages:
             return languages[identifier]
 
-    return None
+    return ""
+
+
+def is_target_code_block(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
+    if not language:
+        return False
+
+    if not isinstance(elem, CodeBlock):
+        return False
+
+    if not elem.identifier:
+        return False
+
+    return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
