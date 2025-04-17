@@ -162,7 +162,7 @@ def _quote(value: str) -> str:
     return value
 
 
-def parse(text: str) -> tuple[str, list[str], dict[str, str]]:
+def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
     """Parse attribute text into identifier, classes, and attributes.
 
     Parses a string like "#id .class1 .class2 key1=value1 key2=value2"
@@ -316,7 +316,7 @@ class CodeBlock(Element):
             attr, code = body, ""
 
         attr = " ".join(_remove_braces(attr.strip()))
-        identifier, classes, attributes = parse(attr)
+        identifier, classes, attributes = _parse(attr)
 
         url = ""
 
@@ -368,7 +368,7 @@ class Image(Element):
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
-        identifier, classes, attributes = parse(match.group("attr"))
+        identifier, classes, attributes = _parse(match.group("attr"))
 
         code = ""
 
@@ -389,14 +389,14 @@ class Image(Element):
         )
 
 
-def iter_elements(
+def parse(
     text: str,
     pos: int = 0,
     endpos: int | None = None,
     classes: tuple[type[Element], ...] = (CodeBlock, Image),
     url: str = "",
 ) -> Iterator[Element | str]:
-    """Iterate through elements in the text.
+    """Parse the text and yield elements.
 
     Finds all occurrences of the specified element types in the text and
     yields either element instances or text segments between elements.
@@ -429,7 +429,7 @@ def iter_elements(
             yield elem
 
         else:
-            yield from iter_elements(text, elem[0], elem[1], classes[1:], url)
+            yield from parse(text, elem[0], elem[1], classes[1:], url)
 
 
 @cache
@@ -448,7 +448,7 @@ def get_language(text: str) -> str:
     languages = {}
     identifiers = []
 
-    for elem in iter_elements(text):
+    for elem in parse(text):
         if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:
             language = elem.classes[0].removeprefix(".")
             languages[elem.identifier] = language
@@ -511,7 +511,7 @@ def new_notebook(text: str) -> NotebookNode:
     node = nbformat.v4.new_notebook()
     node["metadata"]["language_info"] = {"name": language}
 
-    for code_block in iter_elements(text):
+    for code_block in parse(text):
         if is_target_code_block(code_block, language):
             source = f"# #{code_block.identifier}\n{code_block.code}"
             cell = nbformat.v4.new_code_cell(source)
