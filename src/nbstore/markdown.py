@@ -215,7 +215,7 @@ class Element:
     identifier: str
     classes: list[str]
     attributes: dict[str, str]
-    code: str = ""
+    source: str = ""
     url: str = ""
 
     @classmethod
@@ -311,9 +311,9 @@ class CodeBlock(Element):
         body = match.group("body")
 
         if "\n" in body:
-            attr, code = body.split("\n", 1)
+            attr, source = body.split("\n", 1)
         else:
-            attr, code = body, ""
+            attr, source = body, ""
 
         attr = " ".join(_remove_braces(attr.strip()))
         identifier, classes, attributes = _parse(attr)
@@ -327,7 +327,7 @@ class CodeBlock(Element):
                     classes = classes[:k] + classes[k + 1 :]
                     break
 
-        return cls(text, identifier, classes, attributes, code=code, url=url)
+        return cls(text, identifier, classes, attributes, source=source, url=url)
 
 
 def _remove_braces(text: str) -> Iterator[str]:
@@ -370,11 +370,11 @@ class Image(Element):
     def from_match(cls, match: re.Match[str]) -> Self:
         identifier, classes, attributes = _parse(match.group("attr"))
 
-        code = ""
+        source = ""
 
         for k, cls_ in enumerate(classes):
             if cls_.startswith("`") and cls_.endswith("`"):
-                code = cls_[1:-1]
+                source = cls_[1:-1]
                 classes = classes[:k] + classes[k + 1 :]
                 break
 
@@ -383,7 +383,7 @@ class Image(Element):
             identifier,
             classes,
             attributes,
-            code=code,
+            source=source,
             url=match.group("url"),
             alt=match.group("alt"),
         )
@@ -505,7 +505,7 @@ def new_notebook(text: str) -> NotebookNode:
 
     for code_block in parse(text):
         if is_target_code_block(code_block, language):
-            source = f"# #{code_block.identifier}\n{code_block.code}"
+            source = f"# #{code_block.identifier}\n{code_block.source}"
             cell = nbformat.v4.new_code_cell(source)
             node["cells"].append(cell)
 

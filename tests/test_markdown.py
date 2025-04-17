@@ -106,7 +106,7 @@ def test_elements_code_block(elements):
 
     x = elements[2]
     assert isinstance(x, CodeBlock)
-    assert x.code == "![a](b){c}"
+    assert x.source == "![a](b){c}"
     assert x.identifier == ""
     assert x.classes == ["python"]
     assert x.attributes == {}
@@ -117,7 +117,7 @@ def test_elements_code_block_with_attributes(elements):
 
     x = elements[4]
     assert isinstance(x, CodeBlock)
-    assert x.code == "xyz"
+    assert x.source == "xyz"
     assert x.identifier == "id"
     assert x.classes == [".text"]
     assert x.attributes == {"a": "b c"}
@@ -128,7 +128,7 @@ def test_elements_code_block_without_body(elements):
 
     x = elements[6]
     assert isinstance(x, CodeBlock)
-    assert x.code == ""
+    assert x.source == ""
     assert x.identifier == ""
     assert x.classes == ["nobody"]
     assert x.attributes == {}
@@ -139,7 +139,7 @@ def test_elements_code_block_without_attributes(elements):
 
     x = elements[8]
     assert isinstance(x, CodeBlock)
-    assert x.code == "noattr"
+    assert x.source == "noattr"
     assert x.identifier == ""
     assert x.classes == []
     assert x.attributes == {}
@@ -193,7 +193,7 @@ def test_code_block_url():
 
     x = next(parse("```python a.ipynb#id c\nprint(1)\n```\n"))
     assert isinstance(x, CodeBlock)
-    assert x.code == "print(1)"
+    assert x.source == "print(1)"
     assert x.url == "a.ipynb"
     assert x.identifier == "id"
     assert x.classes == ["python", "c"]
@@ -204,7 +204,7 @@ def test_image_code():
 
     x = next(parse("![alt](a.ipynb){#id `co de` b}"))
     assert isinstance(x, Image)
-    assert x.code == "co de"
+    assert x.source == "co de"
     assert x.url == "a.ipynb"
     assert x.identifier == "id"
     assert x.classes == ["b"]
