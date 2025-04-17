@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+"""Convert Markdown files to Jupyter notebooks.
+
+This module provides utilities for parsing Markdown files and converting them
+to notebook format, with support for code blocks, images, and custom attributes.
+It implements a robust parser for Markdown syntax including code blocks with
+language specification and attributes.
+"""
+
 import re
 from dataclasses import dataclass
 from functools import cache
@@ -15,6 +23,17 @@ if TYPE_CHECKING:
 
 
 def _split(text: str) -> Iterator[str]:
+    """Split text into parts while respecting quoted strings.
+
+    Splits text by spaces, treating quoted strings as single parts, and
+    handling escaped quotes correctly.
+
+    Args:
+        text (str): The text to split.
+
+    Yields:
+        str: The split parts.
+    """
     in_quotes = {'"': False, "'": False, "`": False}
 
     chars = list(text)
@@ -42,6 +61,17 @@ def _split(text: str) -> Iterator[str]:
 
 
 def split(text: str) -> Iterator[str]:
+    """Split text into parts, handling key=value pairs.
+
+    Builds on _split by additionally recognizing and combining key=value
+    pairs into single parts.
+
+    Args:
+        text (str): The text to split.
+
+    Yields:
+        str: The split parts.
+    """
     parts = list(_split(text))
 
     start = 0
@@ -133,6 +163,20 @@ def _quote(value: str) -> str:
 
 
 def parse(text: str) -> tuple[str, list[str], dict[str, str]]:
+    """Parse attribute text into identifier, classes, and attributes.
+
+    Parses a string like "#id .class1 .class2 key1=value1 key2=value2"
+    into its components.
+
+    Args:
+        text (str): The attribute text to parse.
+
+    Returns:
+        tuple[str, list[str], dict[str, str]]: A tuple containing:
+            - identifier: The ID (without the '#')
+            - classes: List of class names (with or without the '.')
+            - attributes: Dictionary of attribute key-value pairs
+    """
     identifier = ""
     classes = []
     attributes = {}
@@ -151,6 +195,21 @@ def parse(text: str) -> tuple[str, list[str], dict[str, str]]:
 
 @dataclass
 class Element:
+    """Base class for Markdown elements with attributes.
+
+    Represents a structured element in a Markdown document, with support
+    for identifiers, classes, attributes, and other properties.
+
+    Attributes:
+        pattern: Regular expression pattern to match the element in text.
+        text: The original text of the element.
+        identifier: The ID of the element.
+        classes: List of class names for the element.
+        attributes: Dictionary of attribute key-value pairs.
+        code: The code content of the element (for code blocks).
+        url: The URL of the element (for links and images).
+    """
+
     pattern: ClassVar[re.Pattern]
     text: str
     identifier: str
@@ -161,6 +220,17 @@ class Element:
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
+        """Create an element from a regex match.
+
+        Args:
+            match (re.Match[str]): The regex match object.
+
+        Returns:
+            Self: The created element.
+
+        Raises:
+            NotImplementedError: If not implemented in a subclass.
+        """
         raise NotImplementedError
 
     @classmethod
@@ -170,6 +240,19 @@ class Element:
         pos: int = 0,
         endpos: int | None = None,
     ) -> Iterator[Self | tuple[int, int]]:
+        """Iterate through elements in the text.
+
+        Finds all occurrences of the element pattern in the text and
+        yields either element instances or text spans.
+
+        Args:
+            text (str): The text to search.
+            pos (int): The starting position.
+            endpos (int | None): The ending position.
+
+        Yields:
+            Self | tuple[int, int]: Element instances or text spans.
+        """
         for match in _iter(cls.pattern, text, pos, endpos):
             if isinstance(match, re.Match):
                 yield cls.from_match(match)
@@ -184,6 +267,16 @@ class Element:
         include_classes: bool = True,
         include_attributes: bool = True,
     ) -> Iterator[str]:
+        """Iterate through the parts of the element's attributes.
+
+        Args:
+            include_identifier (bool): Whether to include the identifier.
+            include_classes (bool): Whether to include the classes.
+            include_attributes (bool): Whether to include the attributes.
+
+        Yields:
+            str: The parts of the element's attributes.
+        """
         if include_identifier and self.identifier:
             yield f"#{self.identifier}"
 
@@ -196,6 +289,17 @@ class Element:
 
 @dataclass
 class CodeBlock(Element):
+    """A code block in Markdown.
+
+    Represents a fenced code block, with support for language specification
+    and attributes.
+
+    Example:
+        ```python #id
+        print("Hello, world!")
+        ```
+    """
+
     pattern: ClassVar[re.Pattern] = re.compile(
         r"^(?P<pre> *[~`]{3,})(?P<body>.*?)\n(?P=pre)",
         re.MULTILINE | re.DOTALL,
@@ -247,6 +351,14 @@ def _remove_braces(text: str) -> Iterator[str]:
 
 @dataclass
 class Image(Element):
+    """An image in Markdown.
+
+    Represents an image with alt text, URL, and attributes.
+
+    Example:
+        `![Alt text](image.png){#id .class width=100}`
+    """
+
     pattern = re.compile(
         r"(?<![`])!\[(?P<alt>.*?)\]\((?P<url>.*?)\)\{(?P<attr>.*?)\}(?![`])",
         re.MULTILINE | re.DOTALL,
@@ -284,6 +396,21 @@ def iter_elements(
     classes: tuple[type[Element], ...] = (CodeBlock, Image),
     url: str = "",
 ) -> Iterator[Element | str]:
+    """Iterate through elements in the text.
+
+    Finds all occurrences of the specified element types in the text and
+    yields either element instances or text segments between elements.
+
+    Args:
+        text (str): The text to search.
+        pos (int): The starting position.
+        endpos (int | None): The ending position.
+        classes (tuple[type[Element], ...]): The element types to find.
+        url (str): The URL to use for elements with relative URLs.
+
+    Yields:
+        Element | str: Element instances or text segments.
+    """
     if not classes:
         yield text[pos:endpos]
         return
@@ -307,15 +434,16 @@ def iter_elements(
 
 @cache
 def get_language(text: str) -> str:
-    """Get the language of the first code block in the text.
+    """Get the language of a Markdown document.
 
-    If there is no code block for a Jupyter notebook, return None.
+    Determines the primary programming language used in the document's
+    code blocks.
 
     Args:
-        text (str): The text to get the language from.
+        text (str): The Markdown text.
 
     Returns:
-        str: The language of the first code block with an identifier and a class.
+        str: The detected language, or "python" if not detected.
     """
     languages = {}
     identifiers = []
@@ -340,6 +468,16 @@ def get_language(text: str) -> str:
 
 
 def is_target_code_block(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
+    """Check if an element is a code block with the target language.
+
+    Args:
+        elem (Element | str): The element to check.
+        language (str): The target language.
+
+    Returns:
+        TypeGuard[CodeBlock]: True if the element is a code block with the
+            target language, False otherwise.
+    """
     if not language:
         return False
 
@@ -353,6 +491,17 @@ def is_target_code_block(elem: Element | str, language: str) -> TypeGuard[CodeBl
 
 
 def new_notebook(text: str) -> NotebookNode:
+    """Create a new notebook from Markdown text.
+
+    Parses the Markdown text, extracts code blocks, and creates a notebook
+    with a code cell for each code block.
+
+    Args:
+        text (str): The Markdown text.
+
+    Returns:
+        NotebookNode: The created notebook.
+    """
     language = get_language(text)
 
     if not language:

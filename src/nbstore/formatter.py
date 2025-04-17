@@ -14,8 +14,25 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
     from seaborn.objects import Plot
 
+"""Formatters for visualization outputs in notebooks.
+
+This module provides functions for converting visualization outputs from
+various libraries (matplotlib, seaborn, holoviews) to different formats
+(PGF, PDF, SVG), and utilities for registering these formatters with IPython.
+"""
+
 
 def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> None:
+    """Convert a matplotlib figure to PGF format.
+
+    Creates a temporary PGF file, reads its content, encodes embedded images
+    as base64, and outputs the result using the representation printer.
+
+    Args:
+        fig (Figure): The matplotlib figure to convert.
+        rp (RepresentationPrinter): The printer to output the result.
+        cycle: Object passed by IPython for object representation.
+    """
     name = str(uuid.uuid4())
 
     with tempfile.TemporaryDirectory() as dirname:
@@ -36,6 +53,15 @@ def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> N
 
 
 def _encode_pgf_text(name: str, directory: Path) -> str:
+    """Encode an image file as a base64 data URL.
+
+    Args:
+        name (str): The name of the image file.
+        directory (Path): The directory containing the image file.
+
+    Returns:
+        str: The base64-encoded data URL.
+    """
     ext = name.rsplit(".", 1)[-1]
     data = (directory / name).read_bytes()
     b64 = base64.b64encode(data).decode()
@@ -43,18 +69,41 @@ def _encode_pgf_text(name: str, directory: Path) -> str:
 
 
 def matplotlib_figure_to_pdf(fig: Figure) -> bytes:
+    """Convert a matplotlib figure to PDF format.
+
+    Args:
+        fig (Figure): The matplotlib figure to convert.
+
+    Returns:
+        bytes: The PDF content as bytes.
+    """
     with io.BytesIO() as fp:
         fig.savefig(fp, format="pdf", bbox_inches="tight")
         return fp.getvalue()
 
 
 def matplotlib_figure_to_svg(fig: Figure) -> str:
+    """Convert a matplotlib figure to SVG format.
+
+    Args:
+        fig (Figure): The matplotlib figure to convert.
+
+    Returns:
+        str: The SVG content as a string.
+    """
     with io.StringIO() as fp:
         fig.savefig(fp, format="svg", bbox_inches="tight")
         return fp.getvalue()
 
 
 def seaborn_plot_to_pgf(plot: Plot, rp: RepresentationPrinter, cycle) -> None:
+    """Convert a seaborn plot to PGF format.
+
+    Args:
+        plot (Plot): The seaborn plot to convert.
+        rp (RepresentationPrinter): The printer to output the result.
+        cycle: Object passed by IPython for object representation.
+    """
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
@@ -63,6 +112,14 @@ def seaborn_plot_to_pgf(plot: Plot, rp: RepresentationPrinter, cycle) -> None:
 
 
 def seaborn_plot_to_pdf(plot: Plot) -> bytes:
+    """Convert a seaborn plot to PDF format.
+
+    Args:
+        plot (Plot): The seaborn plot to convert.
+
+    Returns:
+        bytes: The PDF content as bytes.
+    """
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
@@ -71,6 +128,14 @@ def seaborn_plot_to_pdf(plot: Plot) -> bytes:
 
 
 def seaborn_plot_to_svg(plot: Plot) -> str:
+    """Convert a seaborn plot to SVG format.
+
+    Args:
+        plot (Plot): The seaborn plot to convert.
+
+    Returns:
+        str: The SVG content as a string.
+    """
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
@@ -108,7 +173,15 @@ try:
 
     @display_hook
     def pgf_display(element, max_frames):
-        """Used to render elements to PGF if requested in the display formats."""
+        """Used to render elements to PGF if requested in the display formats.
+
+        Args:
+            element: The holoviews element to render.
+            max_frames: Maximum number of frames to render.
+
+        Returns:
+            The rendered element.
+        """
         return image_display(element, max_frames, fmt="pgf")
 
 except ModuleNotFoundError:  # no cov
@@ -116,6 +189,13 @@ except ModuleNotFoundError:  # no cov
 
 
 def set_formatter_holoviews(fmt: str) -> None:
+    """Set a formatter for holoviews.
+
+    Registers a formatter for holoviews elements in the specified format.
+
+    Args:
+        fmt (str): The format to use ('pgf', 'pdf', 'svg').
+    """
     from holoviews.core.dimension import LabelledData
     from holoviews.core.options import Store
 
@@ -127,6 +207,20 @@ def set_formatter_holoviews(fmt: str) -> None:
 
 
 def set_formatter(module: str, fmt: str, ip=None) -> None:
+    """Set a formatter for visualization outputs.
+
+    Registers a formatter for the specified module and format with IPython.
+
+    Args:
+        module (str): The module to set the formatter for ('matplotlib',
+            'seaborn', 'holoviews').
+        fmt (str): The format to use ('pgf', 'pdf', 'svg').
+        ip: Optional IPython instance. If None, get_ipython() is used.
+
+    Raises:
+        NotImplementedError: If the format is not supported.
+        ModuleNotFoundError: If IPython is not installed.
+    """
     if module == "holoviews":
         set_formatter_holoviews(fmt)
         return

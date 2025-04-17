@@ -13,14 +13,40 @@ if TYPE_CHECKING:
 
     from nbformat import NotebookNode
 
+"""Core functionality for reading and managing notebook files.
+
+This module provides the main interface for accessing notebook content
+from various file formats and managing notebook instances in memory.
+"""
+
 
 class Store:
+    """Manage notebook files from one or more source directories.
+
+    Provides a centralized interface for reading notebook files and caching
+    their content for efficient access. Automatically reloads files when
+    they have been modified on disk.
+
+    Attributes:
+        src_dirs: List of source directories to search for notebook files.
+        nodes: Dictionary mapping file paths to their notebook nodes.
+        st_mtime: Dictionary mapping file paths to their last modification times.
+        url: String representing the last accessed URL.
+    """
+
     src_dirs: list[Path]
     nodes: dict[Path, NotebookNode]
     st_mtime: dict[Path, float]
     url: str
 
     def __init__(self, src_dirs: Path | str | Iterable[Path | str]) -> None:
+        """Initialize a new Store instance.
+
+        Args:
+            src_dirs (Path | str | Iterable[Path | str]): One or more directories
+                to search for notebook files. Can be a single path or a collection
+                of paths.
+        """
         if isinstance(src_dirs, (str, Path)):
             src_dirs = [src_dirs]
 
@@ -30,6 +56,20 @@ class Store:
         self.url = ""
 
     def find_path(self, url: str) -> Path:
+        """Find the absolute path of a notebook file.
+
+        Searches for the notebook file in the source directories. If the URL is
+        an absolute path, it is returned directly.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+
+        Returns:
+            Path: The absolute path to the notebook file.
+
+        Raises:
+            ValueError: If the file cannot be found in any source directory.
+        """
         if Path(url).is_absolute():
             return Path(url)
 
@@ -42,6 +82,17 @@ class Store:
         raise ValueError(msg)
 
     def read(self, url: str) -> NotebookNode:
+        """Read a notebook file and return its content.
+
+        If the file has been modified since it was last read, it is reloaded.
+        If no URL is provided, the last URL is used.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+
+        Returns:
+            NotebookNode: The notebook content.
+        """
         url = self.url = url or self.url
 
         path = self.find_path(url)
@@ -54,6 +105,17 @@ class Store:
         return self.nodes[path]
 
     def write(self, url: str, notebook_node: NotebookNode) -> None:
+        """Write a notebook node to a file.
+
+        Currently only supports writing to .ipynb files.
+
+        Args:
+            url (str): The URL or relative path of the notebook file.
+            notebook_node (NotebookNode): The notebook content to write.
+
+        Raises:
+            NotImplementedError: If the file format is not supported for writing.
+        """
         path = self.find_path(url)
 
         if path.suffix == ".ipynb":
@@ -63,6 +125,19 @@ class Store:
 
 
 def read(path: str | Path) -> NotebookNode:
+    """Read a notebook file and return its content.
+
+    Supports .ipynb, .py, and .md file formats.
+
+    Args:
+        path (str | Path): The path to the notebook file.
+
+    Returns:
+        NotebookNode: The notebook content.
+
+    Raises:
+        NotImplementedError: If the file format is not supported.
+    """
     path = Path(path)
 
     if path.suffix == ".ipynb":
