@@ -116,6 +116,8 @@ class Store:
         Raises:
             NotImplementedError: If the file format is not supported for writing.
         """
+        url = url or self.url
+
         path = self.find_path(url)
 
         if path.suffix == ".ipynb":
