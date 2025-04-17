@@ -31,15 +31,15 @@ def test_matplotlib_figure_to_pgf_raster(text: str):
 
 
 def test_findall(text: str):
-    from nbstore.pgf import BASE64_PATTERN
+    from nbstore.notebook import BASE64_PATTERN
 
     assert len(BASE64_PATTERN.findall(text)) == 2
 
 
 def test_convert(text: str):
-    from nbstore.pgf import convert
+    from nbstore.notebook import convert_pgf
 
-    text = convert(text)
+    text = convert_pgf(text)
 
     k = 0
 
@@ -56,6 +56,6 @@ def test_convert(text: str):
 
 
 def test_convert_none():
-    from nbstore.pgf import convert
+    from nbstore.notebook import convert_pgf
 
-    assert convert("abc") == "abc"
+    assert convert_pgf("abc") == "abc"

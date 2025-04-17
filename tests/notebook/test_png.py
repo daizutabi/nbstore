@@ -6,21 +6,27 @@ from nbstore.store import Store
 
 @pytest.fixture(scope="module")
 def nb(store: Store):
-    nb = store.get_notebook("pdf.ipynb")
+    nb = store.read_notebook("png.ipynb")
     assert not nb.is_executed
     nb.execute()
     assert nb.is_executed
     return nb
 
 
+def test_cell(nb: Notebook):
+    cell = nb.get_cell("fig:png")
+    assert isinstance(cell, dict)
+    assert "cell_type" in cell
+
+
 def test_source(nb: Notebook):
-    source = nb.get_source("fig:pdf")
+    source = nb.get_source("fig:png")
     assert isinstance(source, str)
     assert "plot" in source
 
 
 def test_outputs(nb: Notebook):
-    outputs = nb.get_outputs("fig:pdf")
+    outputs = nb.get_outputs("fig:png")
     assert isinstance(outputs, list)
     assert len(outputs) == 2
     assert isinstance(outputs[0], dict)
@@ -30,18 +36,18 @@ def test_outputs(nb: Notebook):
     assert outputs[1]["output_type"] == "display_data"
 
 
-def test_mime_content(nb: Notebook):
-    data = nb.get_mime_content("fig:pdf")
-    assert isinstance(data, tuple)
-    assert len(data) == 2
-    assert data[0] == "application/pdf"
-    assert isinstance(data[1], bytes)
-
-
 def test_data(nb: Notebook):
-    data = nb.get_data("fig:pdf")
+    data = nb.get_data("fig:png")
     assert isinstance(data, dict)
-    assert len(data) == 3
+    assert len(data) == 2
     assert "text/plain" in data
     assert "image/png" in data
-    assert data["application/pdf"].startswith("JVBE")
+    assert data["image/png"].startswith("iVBO")
+
+
+def test_mime_content(nb: Notebook):
+    data = nb.get_mime_content("fig:png")
+    assert isinstance(data, tuple)
+    assert len(data) == 2
+    assert data[0] == "image/png"
+    assert isinstance(data[1], bytes)

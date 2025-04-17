@@ -1,43 +1,63 @@
 from __future__ import annotations
 
+import atexit
+import base64
+import copy
+import re
+import tempfile
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import TYPE_CHECKING, Any
 
 import nbformat
-
-import nbstore.parsers.markdown
-import nbstore.parsers.python
-import nbstore.pgf
-from nbstore.parsers.markdown import CodeBlock
-
-from .content import get_mime_content
 
 if TYPE_CHECKING:
     from typing import Self
 
     from nbformat import NotebookNode
 
-    from nbstore.parsers.markdown import Element
 
-
+@dataclass
 class Notebook:
-    path: Path
     node: NotebookNode
-    is_executed: bool
-
-    def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
-        self.node = create_notebook_node(self.path)
-        self.is_executed = False
-
-    def extend(self, text: str) -> None:
-        extend_notebook_cells(self.node, text)
+    is_modified: bool = False
+    is_executed: bool = False
 
     def equals(self, other: Notebook) -> bool:
         return equals(self.node, other.node)
 
+    def execute(self, timeout: int = 600) -> Self:
+        try:
+            from nbconvert.preprocessors import ExecutePreprocessor
+        except ModuleNotFoundError:  # no cov
+            msg = "nbconvert is not installed"
+            raise ModuleNotFoundError(msg) from None
+
+        ep = ExecutePreprocessor(timeout=timeout)
+        ep.preprocess(self.node)
+        self.is_executed = True
+        return self
+
+    def get_language(self) -> str:
+        return get_language(self.node)
+
     def get_cell(self, identifier: str) -> dict[str, Any]:
         return get_cell(self.node, identifier)
+
+    def add_cell(self, identifier: str, source: str) -> Self:
+        if not self.is_modified:
+            self.node = copy.deepcopy(self.node)
+            self.is_modified = True
+
+        if (
+            not source.startswith("#")
+            or f"#{identifier}" not in source.split("\n", 1)[0]
+        ):
+            source = f"# #{identifier}\n{source}"
+
+        cell = nbformat.v4.new_code_cell(source)
+        self.node["cells"].append(cell)
+        return self
 
     def get_source(
         self,
@@ -57,44 +77,46 @@ class Notebook:
     def get_data(self, identifier: str) -> dict[str, str]:
         outputs = self.get_outputs(identifier)
         data = get_data(outputs)
-        return convert(data)
+        return convert_data(data)
 
-    def add_data(self, identifier: str, mime: str, data: str) -> None:
+    def add_data(self, identifier: str, mime: str, data: str) -> Self:
         outputs = self.get_outputs(identifier)
         if output := get_data_by_type(outputs, "display_data"):
             output[mime] = data
+        return self
 
-    def delete_data(self, identifier: str, mime: str) -> None:
+    def delete_data(self, identifier: str, mime: str) -> Self:
         outputs = self.get_outputs(identifier)
         output = get_data_by_type(outputs, "display_data")
         if output and mime in output:
             del output[mime]
-
-    def get_language(self) -> str:
-        return get_language(self.node)
-
-    def execute(self, timeout: int = 600) -> Self:
-        try:
-            from nbconvert.preprocessors import ExecutePreprocessor
-        except ModuleNotFoundError:  # no cov
-            msg = "nbconvert is not installed"
-            raise ModuleNotFoundError(msg) from None
-
-        ep = ExecutePreprocessor(timeout=timeout)
-        ep.preprocess(self.node)
-        self.is_executed = True
         return self
 
     def get_mime_content(self, identifier: str) -> tuple[str, str | bytes] | None:
         data = self.get_data(identifier)
         return get_mime_content(data)
 
-    def write(self, path: str | Path | None = None) -> None:
-        path = Path(path or self.path)
-        if path.suffix == ".ipynb":
-            nbformat.write(self.node, path or self.path)
-        else:
-            raise NotImplementedError
+
+def equals(node: NotebookNode, other: NotebookNode) -> bool:
+    if len(node["cells"]) != len(other["cells"]):
+        return False
+
+    for cell1, cell2 in zip(node["cells"], other["cells"], strict=False):
+        if cell1["source"] != cell2["source"]:
+            return False
+
+    return True
+
+
+def get_language(node: NotebookNode, default: str = "python") -> str:
+    metadata = node["metadata"]
+    if "kernelspec" in metadata:
+        return metadata["kernelspec"].get("language", default)
+
+    if "language_info" in metadata:
+        return metadata["language_info"].get("name", default)
+
+    return default
 
 
 def get_cell(node: NotebookNode, identifier: str) -> dict[str, Any]:
@@ -153,92 +175,54 @@ def get_data(outputs: list) -> dict[str, str]:
     return {}
 
 
-def get_language(node: NotebookNode, default: str = "python") -> str:
-    metadata = node["metadata"]
-    if "kernelspec" in metadata:
-        return metadata["kernelspec"].get("language", default)
-
-    if "language_info" in metadata:
-        return metadata["language_info"].get("name", default)
-
-    return default
-
-
-def convert(data: dict[str, str]) -> dict[str, str]:
+def convert_data(data: dict[str, str]) -> dict[str, str]:
     text = data.get("text/plain")
     if text and text.startswith("%% Creator: Matplotlib, PGF backend"):
-        data["text/plain"] = nbstore.pgf.convert(text)
+        data["text/plain"] = convert_pgf(text)
 
     return data
 
 
-def create_notebook_node(path: str | Path) -> NotebookNode:
-    path = Path(path)
-
-    if path.suffix == ".ipynb":
-        return nbformat.read(path, as_version=4)  # type: ignore
-
-    text = path.read_text()
-
-    if path.suffix == ".py":
-        return create_notebook_node_python(text)
-
-    if path.suffix == ".md":
-        return create_notebook_node_markdown(text)
-
-    raise NotImplementedError
+BASE64_PATTERN = re.compile(r"\{data:image/(?P<ext>.*?);base64,(?P<b64>.*?)\}")
 
 
-def create_notebook_node_python(text: str) -> NotebookNode:
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": "python"}
+def convert_pgf(text: str) -> str:
+    def replace(match: re.Match) -> str:
+        ext = match.group("ext")
+        data = base64.b64decode(match.group("b64"))
 
-    for source in nbstore.parsers.python.iter_sources(text):
-        cell = nbformat.v4.new_code_cell(source)
-        node["cells"].append(cell)
+        with tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False) as tmp:
+            tmp.write(data)
+            path = Path(tmp.name)
 
-    return node
+        atexit.register(lambda p=path: p.unlink(missing_ok=True))
 
+        return f"{{{path.absolute()}}}"
 
-def create_notebook_node_markdown(text: str) -> NotebookNode:
-    language = nbstore.parsers.markdown.get_language(text)
-
-    if not language:
-        msg = "language not found"
-        raise ValueError(msg)
-
-    node = nbformat.v4.new_notebook()
-    node["metadata"]["language_info"] = {"name": language}
-    extend_notebook_cells(node, text)
-    return node
+    return BASE64_PATTERN.sub(replace, text)
 
 
-def extend_notebook_cells(node: NotebookNode, text: str) -> None:
-    language = get_language(node)
+def get_mime_content(data: dict[str, str]) -> tuple[str, str | bytes] | None:
+    """Get the content of a notebook cell.
 
-    for code_block in nbstore.parsers.markdown.iter_elements(text):
-        if _is_notebook_cell(code_block, language):
-            source = f"# #{code_block.identifier}\n{code_block.code}"
-            cell = nbformat.v4.new_code_cell(source)
-            node["cells"].append(cell)
+    Args:
+        data (dict[str, str]): The data of a notebook cell.
 
+    Returns:
+        tuple[str, str | bytes] | None: A tuple of the mime type and the content.
+    """
+    for mime in ["image/svg+xml", "text/html"]:
+        if text := data.get(mime):
+            return mime, text
 
-def _is_notebook_cell(elem: Element | str, language: str) -> TypeGuard[CodeBlock]:
-    if not isinstance(elem, CodeBlock):
-        return False
+    if text := data.get("application/pdf"):
+        return "application/pdf", base64.b64decode(text)
 
-    if not elem.identifier:
-        return False
+    for mime, text in data.items():
+        if mime.startswith("image/"):
+            return mime, base64.b64decode(text)
 
-    return bool(elem.classes and elem.classes[0] in (language, f".{language}"))
+    if "text/plain" in data:
+        return "text/plain", data["text/plain"]
 
-
-def equals(node: NotebookNode, other: NotebookNode) -> bool:
-    if len(node["cells"]) != len(other["cells"]):
-        return False
-
-    for cell1, cell2 in zip(node["cells"], other["cells"], strict=False):
-        if cell1["source"] != cell2["source"]:
-            return False
-
-    return True
+    return None

@@ -13,7 +13,7 @@ def lib(request: pytest.FixtureRequest):
 
 @pytest.fixture(scope="module")
 def nb(store: Store, lib: str):
-    nb = store.get_notebook(f"{lib}.ipynb")
+    nb = store.read_notebook(f"{lib}.ipynb")
     assert not nb.is_executed
     nb.execute()
     assert nb.is_executed

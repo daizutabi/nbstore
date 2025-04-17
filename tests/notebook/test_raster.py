@@ -10,7 +10,7 @@ from nbstore.store import Store
 
 @pytest.fixture(scope="module")
 def nb(store: Store):
-    return store.get_notebook("raster.ipynb")
+    return store.read_notebook("raster.ipynb")
 
 
 def test_data(nb: Notebook):

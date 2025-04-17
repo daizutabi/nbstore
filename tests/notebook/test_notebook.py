@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from nbstore.notebook import Notebook
@@ -8,7 +6,7 @@ from nbstore.store import Store
 
 @pytest.fixture(scope="module")
 def nb(store: Store):
-    return store.get_notebook("add.ipynb")
+    return store.read_notebook("add.ipynb")
 
 
 def test_add_delete(nb: Notebook):
@@ -22,16 +20,6 @@ def test_add_delete(nb: Notebook):
 
 def test_language(nb: Notebook):
     assert nb.get_language() == "python"
-
-
-def test_write(nb: Notebook, tmp_path: Path):
-    path = tmp_path / "tmp.ipynb"
-    nb.write(path)
-    assert path.exists()
-    nb2 = Notebook(path)
-    data = nb2.get_mime_content("add")
-    assert data
-    assert data[0] == "image/png"
 
 
 def test_cell_error(nb: Notebook):
@@ -50,3 +38,9 @@ def test_data_empty(nb: Notebook):
 def test_source_include_identifier(nb: Notebook):
     source = nb.get_source("add", include_identifier=True)
     assert source.startswith("# #add\n")
+
+
+def test_get_mime_content():
+    from nbstore.notebook import get_mime_content
+
+    assert get_mime_content({}) is None
