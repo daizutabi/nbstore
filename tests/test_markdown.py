@@ -371,3 +371,26 @@ def test_language_error():
 
     with pytest.raises(ValueError, match="language not found"):
         new_notebook("hello")
+
+
+SOURCE_INDENT = """\
+![alt](.md){#id-0}
+ ![alt](.md){#id-1}
+
+def fgi
+    ![alt](.md){#id-4}
+jkl
+a ![alt](.md){#id-a} ![alt](.md){#id-a}
+"""
+
+
+def test_indent():
+    from nbstore.markdown import Image, parse
+
+    elems = [e for e in parse(SOURCE_INDENT) if isinstance(e, Image)]
+    assert len(elems) == 5
+    assert elems[0].indent == ""
+    assert elems[1].indent == " "
+    assert elems[2].indent == "    "
+    assert elems[3].indent == ""
+    assert elems[4].indent == ""
