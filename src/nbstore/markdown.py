@@ -184,6 +184,8 @@ def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
     for part in split(text):
         if part.startswith("#"):
             identifier = part[1:]
+        elif part.startswith("`") and part.endswith("`"):  # for source syntax
+            classes.append(part)
         elif "=" in part:
             key, value = part.split("=", 1)
             attributes[key] = _strip_quotes(value)

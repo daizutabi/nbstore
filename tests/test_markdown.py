@@ -210,6 +210,17 @@ def test_image_code():
     assert x.classes == ["b"]
 
 
+def test_image_code_eq():
+    from nbstore.markdown import Image, parse
+
+    x = next(parse("![alt](a.ipynb){#id `a=1;b=2` b}"))
+    assert isinstance(x, Image)
+    assert x.source == "a=1;b=2"
+    assert x.url == "a.ipynb"
+    assert x.identifier == "id"
+    assert x.classes == ["b"]
+
+
 SOURCE_LANG = """\
 
 ```python #_
