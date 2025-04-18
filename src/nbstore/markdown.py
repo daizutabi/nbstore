@@ -423,7 +423,7 @@ def parse(
             yield elem
 
         else:
-            yield elem.text
+            raise NotImplementedError
 
 
 @cache
