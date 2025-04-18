@@ -219,6 +219,7 @@ class Element:
     attributes: dict[str, str]
     source: str = ""
     url: str = ""
+    indent: str = ""
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self:
@@ -415,11 +416,22 @@ def parse(
         yield text[pos:endpos]
         return
 
+    indent = ""
     for elem in classes[0].iter_elements(text, pos, endpos):
         if isinstance(elem, tuple):
-            yield from parse(text, elem[0], elem[1], classes[1:])
+            prev = text[elem[0] : elem[1]]
+            if "\n" not in prev:
+                indent = ""
+            else:
+                indent = prev.rsplit("\n", 1)[-1]
+                if not all(c.isspace() for c in indent):
+                    indent = ""
+            yield from parse(text, elem[0], elem[1] - len(indent), classes[1:])
 
         elif isinstance(elem, CodeBlock | Image):
+            if isinstance(elem, Image):
+                elem.indent = indent
+            indent = ""
             yield elem
 
         else:
