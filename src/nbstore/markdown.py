@@ -198,33 +198,11 @@ def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
 
 
 @dataclass
-class Element:
-    """Base class for Markdown elements with attributes.
-
-    Represents a structured element in a Markdown document, with support
-    for identifiers, classes, attributes, and other properties.
-
-    Attributes:
-        pattern: Regular expression pattern to match the element in text.
-        text: The original text of the element.
-        identifier: The ID of the element.
-        classes: List of class names for the element.
-        attributes: Dictionary of attribute key-value pairs.
-        code: The code content of the element (for code blocks).
-        url: The URL of the element (for links and images).
-    """
-
+class Matcher:
     pattern: ClassVar[re.Pattern]
-    text: str
-    identifier: str
-    classes: list[str]
-    attributes: dict[str, str]
-    source: str = ""
-    url: str = ""
-    indent: str = ""
 
     @classmethod
-    def from_match(cls, match: re.Match[str]) -> Self:
+    def from_match(cls, match: re.Match[str]) -> Self | str:
         """Create an element from a regex match.
 
         Args:
@@ -233,10 +211,8 @@ class Element:
         Returns:
             Self: The created element.
 
-        Raises:
-            NotImplementedError: If not implemented in a subclass.
         """
-        raise NotImplementedError
+        return match.group(0)
 
     @classmethod
     def iter_elements(
@@ -244,7 +220,7 @@ class Element:
         text: str,
         pos: int = 0,
         endpos: int | None = None,
-    ) -> Iterator[Self | tuple[int, int]]:
+    ) -> Iterator[Self | str | tuple[int, int]]:
         """Iterate through elements in the text.
 
         Finds all occurrences of the element pattern in the text and
@@ -264,6 +240,42 @@ class Element:
 
             else:
                 yield match
+
+
+@dataclass
+class Comment(Matcher):
+    """A comment in Markdown."""
+
+    pattern: ClassVar[re.Pattern] = re.compile(
+        r"<!--(?P<body>.*?)-->",
+        re.MULTILINE | re.DOTALL,
+    )
+
+
+@dataclass
+class Element(Matcher):
+    """Base class for Markdown elements with attributes.
+
+    Represents a structured element in a Markdown document, with support
+    for identifiers, classes, attributes, and other properties.
+
+    Attributes:
+        pattern: Regular expression pattern to match the element in text.
+        text: The original text of the element.
+        identifier: The ID of the element.
+        classes: List of class names for the element.
+        attributes: Dictionary of attribute key-value pairs.
+        code: The code content of the element (for code blocks).
+        url: The URL of the element (for links and images).
+    """
+
+    text: str
+    identifier: str
+    classes: list[str]
+    attributes: dict[str, str]
+    source: str = ""
+    url: str = ""
+    indent: str = ""
 
     def iter_parts(
         self,
@@ -409,7 +421,7 @@ def parse(
     text: str,
     pos: int = 0,
     endpos: int | None = None,
-    classes: tuple[type[Element], ...] = (CodeBlock, Image),
+    classes: tuple[type[Matcher], ...] = (Comment, CodeBlock, Image),
 ) -> Iterator[CodeBlock | Image | str]:
     """Parse the text and yield elements.
 
@@ -431,7 +443,10 @@ def parse(
 
     indent = ""
     for elem in classes[0].iter_elements(text, pos, endpos):
-        if isinstance(elem, tuple):
+        if isinstance(elem, str):
+            yield elem
+
+        elif isinstance(elem, tuple):
             if indent:
                 raise NotImplementedError
 

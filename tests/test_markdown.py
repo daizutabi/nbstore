@@ -442,3 +442,10 @@ def test_join_code_block():
     elems = parse(SOURCE_INDENT_CODE_BLOCK)
     x = [e if isinstance(e, str) else e.text for e in elems]
     assert "".join(x) == SOURCE_INDENT_CODE_BLOCK
+
+
+def test_comment():
+    from nbstore.markdown import parse
+
+    text = "<!-- ![alt](a.py){#id} -->"
+    assert next(parse(text)) == text
