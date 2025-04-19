@@ -114,4 +114,4 @@ def test_data_empty(nb: NotebookNode):
 def test_mime_content_empty(nb: NotebookNode):
     from nbstore.notebook import get_mime_content
 
-    assert get_mime_content(nb, "empty") is None
+    assert get_mime_content(nb, "empty") == ("", "")

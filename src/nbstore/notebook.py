@@ -225,7 +225,7 @@ def _convert_pgf(text: str) -> str:
 def get_mime_content(
     nb: NotebookNode,
     identifier: str,
-) -> tuple[str, str | bytes] | None:
+) -> tuple[str, str | bytes]:
     """Get the MIME content of a cell by its identifier.
 
     Extracts the content of a cell output based on MIME type, prioritizing
@@ -236,8 +236,8 @@ def get_mime_content(
         identifier (str): The identifier of the cell.
 
     Returns:
-        tuple[str, str | bytes] | None: A tuple of (mime_type, content),
-            or None if no content is found.
+        tuple[str, str | bytes]: A tuple of (mime_type, content),
+            or ("", "") if no content is found.
     """
     data = get_data(nb, identifier)
     for mime in ["image/svg+xml", "text/html"]:
@@ -254,7 +254,7 @@ def get_mime_content(
     if "text/plain" in data:
         return "text/plain", data["text/plain"]
 
-    return None
+    return "", ""
 
 
 def add_data(nb: NotebookNode, identifier: str, mime: str, data: str) -> None:
