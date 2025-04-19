@@ -9,8 +9,10 @@ language specification and attributes.
 from __future__ import annotations
 
 import re
+import textwrap
 from dataclasses import dataclass
 from functools import cache
+from itertools import takewhile
 from typing import TYPE_CHECKING, ClassVar, TypeGuard
 
 import nbformat
@@ -312,9 +314,12 @@ class CodeBlock(Element):
     def from_match(cls, match: re.Match[str]) -> Self:
         text = match.group(0)
         body = match.group("body")
+        pre = match.group("pre")
+        indent = "".join(takewhile(str.isspace, pre))
 
         if "\n" in body:
             attr, source = body.split("\n", 1)
+            source = textwrap.dedent(source)
         else:
             attr, source = body, ""
 
@@ -330,7 +335,15 @@ class CodeBlock(Element):
                     classes = classes[:k] + classes[k + 1 :]
                     break
 
-        return cls(text, identifier, classes, attributes, source=source, url=url)
+        return cls(
+            text,
+            identifier,
+            classes,
+            attributes,
+            source=source,
+            url=url,
+            indent=indent,
+        )
 
 
 def _remove_braces(text: str) -> Iterator[str]:
@@ -419,13 +432,7 @@ def parse(
     indent = ""
     for elem in classes[0].iter_elements(text, pos, endpos):
         if isinstance(elem, tuple):
-            prev = text[elem[0] : elem[1]]
-            if "\n" not in prev:
-                indent = ""
-            else:
-                indent = prev.rsplit("\n", 1)[-1]
-                if not all(c.isspace() for c in indent):
-                    indent = ""
+            indent = _get_indent(text[elem[0] : elem[1]])
             yield from parse(text, elem[0], elem[1] - len(indent), classes[1:])
 
         elif isinstance(elem, CodeBlock | Image):
@@ -436,6 +443,17 @@ def parse(
 
         else:
             raise NotImplementedError
+
+
+def _get_indent(text: str) -> str:
+    if "\n" not in text:
+        return ""
+
+    indent = text.rsplit("\n", 1)[-1]
+    if all(c.isspace() for c in indent):
+        return indent
+
+    return ""
 
 
 @cache
