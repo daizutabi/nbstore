@@ -157,11 +157,11 @@ def _strip_quotes(value: str) -> str:
 
 
 def _quote(value: str) -> str:
-    if any(c in value for c in " \t\n\r\"'=<>&"):
-        if '"' in value:
-            return f"'{value}'"
-        return f'"{value}"'
-    return value
+    if not value:
+        return value
+    if '"' in value:
+        return f"'{value}'"
+    return f'"{value}"'
 
 
 def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
