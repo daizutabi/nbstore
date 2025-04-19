@@ -53,4 +53,8 @@ markdown_extensions:
       alternate_style: true
 nav:
   - Home: index.md
+  - Features:
+      - features/index.md
+      - Markdown Processing: features/markdown.md
+      - Notebook Operations: features/notebook.md
   - Reference: $api/nbstore.***
