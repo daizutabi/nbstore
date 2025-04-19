@@ -164,7 +164,7 @@ def test_iter_parts():
     from nbstore.markdown import Element
 
     x = Element("", "id", ["a", "b"], {"k": "v"})
-    assert list(x.iter_parts()) == ["a", "b", 'k=""v"']
+    assert list(x.iter_parts()) == ["a", "b", 'k="v"']
     assert list(x.iter_parts(include_identifier=True)) == ["#id", "a", "b", 'k="v"']
 
 
