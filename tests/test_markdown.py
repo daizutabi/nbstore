@@ -373,7 +373,7 @@ def test_language_error():
         new_notebook("hello")
 
 
-SOURCE_INDENT = """\
+SOURCE_INDENT_IMAGE = """\
 ![alt](.md){#id-0}
  ![alt](.md){#id-1}
 
@@ -384,13 +384,37 @@ a ![alt](.md){#id-a} ![alt](.md){#id-a}
 """
 
 
-def test_indent():
+def test_indent_image():
     from nbstore.markdown import Image, parse
 
-    elems = [e for e in parse(SOURCE_INDENT) if isinstance(e, Image)]
+    elems = [e for e in parse(SOURCE_INDENT_IMAGE) if isinstance(e, Image)]
     assert len(elems) == 5
     assert elems[0].indent == ""
     assert elems[1].indent == " "
     assert elems[2].indent == "    "
     assert elems[3].indent == ""
     assert elems[4].indent == ""
+
+
+SOURCE_INDENT_CODE_BLOCK = """\
+```python
+a
+  b
+```
+
+    ```python
+    a
+      b
+    ```
+"""
+
+
+def test_indent_code_block():
+    from nbstore.markdown import CodeBlock, parse
+
+    elems = [e for e in parse(SOURCE_INDENT_CODE_BLOCK) if isinstance(e, CodeBlock)]
+    assert len(elems) == 2
+    assert elems[0].indent == ""
+    assert elems[0].source == "a\n  b"
+    assert elems[1].indent == "    "
+    assert elems[1].source == "a\n  b"
