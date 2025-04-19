@@ -380,7 +380,7 @@ SOURCE_INDENT_IMAGE = """\
 def fgi
     ![alt](.md){#id-4}
 jkl
-a ![alt](.md){#id-a} ![alt](.md){#id-a}
+a ![alt](.md){#id-a} ![alt](.md){#id-b}
 """
 
 
@@ -391,9 +391,21 @@ def test_indent_image():
     assert len(elems) == 5
     assert elems[0].indent == ""
     assert elems[1].indent == " "
+    assert elems[1].text == " ![alt](.md){#id-1}"
     assert elems[2].indent == "    "
+    assert elems[2].text == "    ![alt](.md){#id-4}"
     assert elems[3].indent == ""
+    assert elems[3].text == "![alt](.md){#id-a}"
     assert elems[4].indent == ""
+    assert elems[4].text == "![alt](.md){#id-b}"
+
+
+def test_join_image():
+    from nbstore.markdown import parse
+
+    elems = parse(SOURCE_INDENT_IMAGE)
+    x = [e if isinstance(e, str) else e.text for e in elems]
+    assert "".join(x) == SOURCE_INDENT_IMAGE
 
 
 SOURCE_INDENT_CODE_BLOCK = """\
@@ -401,11 +413,13 @@ SOURCE_INDENT_CODE_BLOCK = """\
 a
   b
 ```
+a
 
     ```python
     a
       b
     ```
+    d
 """
 
 
@@ -416,5 +430,15 @@ def test_indent_code_block():
     assert len(elems) == 2
     assert elems[0].indent == ""
     assert elems[0].source == "a\n  b"
+    assert elems[0].text.startswith("```python")
     assert elems[1].indent == "    "
     assert elems[1].source == "a\n  b"
+    assert elems[1].text.startswith("    ```python")
+
+
+def test_join_code_block():
+    from nbstore.markdown import parse
+
+    elems = parse(SOURCE_INDENT_CODE_BLOCK)
+    x = [e if isinstance(e, str) else e.text for e in elems]
+    assert "".join(x) == SOURCE_INDENT_CODE_BLOCK

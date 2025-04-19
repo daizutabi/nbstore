@@ -432,13 +432,19 @@ def parse(
     indent = ""
     for elem in classes[0].iter_elements(text, pos, endpos):
         if isinstance(elem, tuple):
+            if indent:
+                raise NotImplementedError
+
             indent = _get_indent(text[elem[0] : elem[1]])
             yield from parse(text, elem[0], elem[1] - len(indent), classes[1:])
 
         elif isinstance(elem, CodeBlock | Image):
             if isinstance(elem, Image):
                 elem.indent = indent
-            indent = ""
+                elem.text = f"{indent}{elem.text}"
+                indent = ""
+            elif indent:
+                raise NotImplementedError
             yield elem
 
         else:
