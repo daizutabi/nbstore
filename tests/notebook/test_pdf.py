@@ -10,7 +10,7 @@ set_formatter("matplotlib", "pdf")
 """
 
 SOURCE_FIG = """\
-# #fig
+#| label: fig
 import matplotlib.pyplot as plt
 plt.plot([1, 10, 100], [-1, 0, 1])
 """
