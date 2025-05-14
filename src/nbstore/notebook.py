@@ -62,7 +62,7 @@ def get_cell(nb: NotebookNode, identifier: str) -> dict[str, Any]:
     """
     for cell in nb["cells"]:
         source: str = cell["source"]
-        for prefix in ["# #", "# %% #", "#| label: "]:
+        for prefix in ["# #", "# %% #", "#| label: ", "# | label: "]:
             if source.startswith(f"{prefix}{identifier}\n"):
                 return cell
 
