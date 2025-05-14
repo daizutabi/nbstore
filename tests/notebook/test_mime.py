@@ -30,6 +30,5 @@ def test_text(nb: NotebookNode):
     assert len(data) == 3
     assert "text/plain" in data
     assert "image/svg+xml" in data
-    print(data["image/svg+xml"])
-    assert 0
     assert "image/png" in data
+    assert "font-family: 'DejaVu Sans', 'Harano Aji Gothic';" in data["image/svg+xml"]
