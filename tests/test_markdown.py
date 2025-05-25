@@ -168,6 +168,13 @@ def test_iter_parts():
     assert list(x.iter_parts(include_identifier=True)) == ["#id", "a", "b", 'k="v"']
 
 
+def test_iter_parts_exclude_attributes():
+    from nbstore.markdown import Element
+
+    x = Element("", "id", ["a", "b"], {"k": "v", "l": "w"})
+    assert list(x.iter_parts(exclude_attributes=["l"])) == ["a", "b", 'k="v"']
+
+
 @pytest.mark.parametrize(
     ("markdown", "expected"),
     [

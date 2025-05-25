@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, ClassVar, TypeGuard
 import nbformat
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
     from typing import Self
 
     from nbformat import NotebookNode
@@ -283,6 +283,7 @@ class Element(Matcher):
         include_identifier: bool = False,
         include_classes: bool = True,
         include_attributes: bool = True,
+        exclude_attributes: Iterable[str] = (),
     ) -> Iterator[str]:
         """Iterate through the parts of the element's attributes.
 
@@ -290,6 +291,7 @@ class Element(Matcher):
             include_identifier (bool): Whether to include the identifier.
             include_classes (bool): Whether to include the classes.
             include_attributes (bool): Whether to include the attributes.
+            exclude_attributes (Iterable[str]): Attributes to exclude.
 
         Yields:
             str: The parts of the element's attributes.
@@ -301,7 +303,9 @@ class Element(Matcher):
             yield from self.classes
 
         if include_attributes:
-            yield from (f"{k}={_quote(v)}" for k, v in self.attributes.items())
+            for k, v in self.attributes.items():
+                if k not in exclude_attributes:
+                    yield f"{k}={_quote(v)}"
 
 
 @dataclass
