@@ -54,7 +54,6 @@ dev = [
   "pytest-cov",
   "pytest-randomly",
   "pytest-xdist>=3.6",
-  "ruff>=0.11",
   "seaborn>=0.13",
 ]
 docs = ["mkapi", "mkdocs-material"]
