@@ -17,9 +17,20 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from IPython.core.interactiveshell import InteractiveShell
     from IPython.lib.pretty import RepresentationPrinter
     from matplotlib.figure import Figure
     from seaborn.objects import Plot
+
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportMissingParameterType=false
+# pyright: reportMissingTypeArgument=false
+# pyright: reportMissingTypeStubs=false
+# pyright: reportUnknownArgumentType=false
+# pyright: reportUnknownMemberType=false
+# pyright: reportUnknownParameterType=false
+# pyright: reportUnknownVariableType=false
+# pyright: reportUnusedParameter=false
 
 
 def matplotlib_figure_to_pgf(fig: Figure, rp: RepresentationPrinter, cycle) -> None:
@@ -107,8 +118,8 @@ def seaborn_plot_to_pgf(plot: Plot, rp: RepresentationPrinter, cycle) -> None:
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
-    with theme_context(plotter._theme):  # type: ignore
-        return matplotlib_figure_to_pgf(plotter._figure, rp, cycle)  # type: ignore
+    with theme_context(plotter._theme):
+        return matplotlib_figure_to_pgf(plotter._figure, rp, cycle)
 
 
 def seaborn_plot_to_pdf(plot: Plot) -> bytes:
@@ -123,8 +134,8 @@ def seaborn_plot_to_pdf(plot: Plot) -> bytes:
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
-    with theme_context(plotter._theme):  # type: ignore
-        return matplotlib_figure_to_pdf(plotter._figure)  # type: ignore
+    with theme_context(plotter._theme):
+        return matplotlib_figure_to_pdf(plotter._figure)
 
 
 def seaborn_plot_to_svg(plot: Plot) -> str:
@@ -139,8 +150,8 @@ def seaborn_plot_to_svg(plot: Plot) -> str:
     from seaborn._core.plot import theme_context
 
     plotter = plot.plot()
-    with theme_context(plotter._theme):  # type: ignore
-        return matplotlib_figure_to_svg(plotter._figure)  # type: ignore
+    with theme_context(plotter._theme):
+        return matplotlib_figure_to_svg(plotter._figure)
 
 
 MIMES: dict[str, str] = {
@@ -185,7 +196,7 @@ try:
         return image_display(element, max_frames, fmt="pgf")
 
 except ModuleNotFoundError:  # no cov
-    pgf_display = None  # type: ignore
+    pgf_display = None  # pyright: ignore[reportAssignmentType]
 
 
 def set_formatter_holoviews(fmt: str) -> None:
@@ -202,11 +213,11 @@ def set_formatter_holoviews(fmt: str) -> None:
     if fmt not in Store.display_formats:
         Store.display_formats.append(fmt)
 
-    if fmt == "pgf" and pgf_display:
+    if fmt == "pgf" and pgf_display:  # pyright: ignore[reportUnnecessaryComparison]
         Store.set_display_hook(fmt, LabelledData, pgf_display)
 
 
-def set_formatter(module: str, fmt: str, ip=None) -> None:
+def set_formatter(module: str, fmt: str, ip: InteractiveShell | None = None) -> None:
     """Set a formatter for visualization outputs.
 
     Registers a formatter for the specified module and format with IPython.
@@ -237,7 +248,7 @@ def set_formatter(module: str, fmt: str, ip=None) -> None:
     if not (mime := MIMES.get(fmt)):
         raise NotImplementedError
 
-    formatter = ip.display_formatter.formatters[mime]  # type:ignore
+    formatter = ip.display_formatter.formatters[mime]  # pyright: ignore[reportOptionalMemberAccess]
 
     if module_classes := MODULE_CLASSES.get(module):
         for module_class in module_classes:

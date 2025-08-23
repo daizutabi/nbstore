@@ -121,7 +121,7 @@ class Store:
         path = self.find_path(url)
 
         if path.suffix == ".ipynb":
-            return nbformat.write(notebook_node, path)
+            return nbformat.write(notebook_node, path)  # pyright: ignore[reportUnknownMemberType]
 
         raise NotImplementedError
 
@@ -143,7 +143,7 @@ def read(path: str | Path) -> NotebookNode:
     path = Path(path)
 
     if path.suffix == ".ipynb":
-        return nbformat.read(path, as_version=4)  # type: ignore
+        return nbformat.read(path, as_version=4)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
     text = path.read_text()
 

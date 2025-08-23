@@ -102,8 +102,11 @@ ignore = [
 "**/tests/*" = ["ANN", "ARG", "D", "FBT", "NPY", "PD", "PLR", "RUF", "S"]
 "*.ipynb" = ["ERA001", "T201"]
 
-[tool.pyright]
+[tool.basedpyright]
 include = ["src", "tests"]
-strictDictionaryInference = true
-strictListInference = true
-strictSetInference = true
+reportAny = false
+reportExplicitAny = false
+reportImplicitOverride = false
+reportIncompatibleVariableOverride = false
+reportImportCycles = false
+reportUnusedCallResult = false
