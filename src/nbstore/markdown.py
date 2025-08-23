@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
     from nbformat import NotebookNode
 
+# pyright: reportUnknownMemberType=false
+
 
 def _split(text: str) -> Iterator[str]:
     """Split text into parts while respecting quoted strings.
@@ -89,7 +91,7 @@ def split(text: str) -> Iterator[str]:
 
 
 def _iter(
-    pattern: re.Pattern,
+    pattern: re.Pattern[str],
     text: str,
     pos: int = 0,
     endpos: int | None = None,
@@ -180,8 +182,8 @@ def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
             - attributes: Dictionary of attribute key-value pairs
     """
     identifier = ""
-    classes = []
-    attributes = {}
+    classes: list[str] = []
+    attributes: dict[str, str] = {}
 
     for part in split(text):
         if part.startswith("#"):
@@ -199,7 +201,7 @@ def _parse(text: str) -> tuple[str, list[str], dict[str, str]]:
 
 @dataclass
 class Matcher:
-    pattern: ClassVar[re.Pattern]
+    pattern: ClassVar[re.Pattern[str]]
 
     @classmethod
     def from_match(cls, match: re.Match[str]) -> Self | str:
@@ -246,7 +248,7 @@ class Matcher:
 class Comment(Matcher):
     """A comment in Markdown."""
 
-    pattern: ClassVar[re.Pattern] = re.compile(
+    pattern: ClassVar[re.Pattern[str]] = re.compile(
         r"<!--(?P<body>.*?)-->",
         re.MULTILINE | re.DOTALL,
     )
@@ -321,7 +323,7 @@ class CodeBlock(Element):
         ```
     """
 
-    pattern: ClassVar[re.Pattern] = re.compile(
+    pattern: ClassVar[re.Pattern[str]] = re.compile(
         r"^(?P<pre> *[~`]{3,})(?P<body>.*?)\n(?P=pre)",
         re.MULTILINE | re.DOTALL,
     )
@@ -391,7 +393,7 @@ class Image(Element):
         `![Alt text](image.png){#id .class width=100}`
     """
 
-    pattern = re.compile(
+    pattern: ClassVar[re.Pattern[str]] = re.compile(
         r"(?<![`])!\[(?P<alt>.*?)\]\((?P<url>.*?)\)\{(?P<attr>.*?)\}(?![`])",
         re.MULTILINE | re.DOTALL,
     )
@@ -494,8 +496,8 @@ def get_language(text: str) -> str:
     Returns:
         str: The detected language, or "python" if not detected.
     """
-    languages = {}
-    identifiers = []
+    languages: dict[str, str] = {}
+    identifiers: list[str] = []
 
     for elem in parse(text):
         if isinstance(elem, CodeBlock) and elem.identifier and elem.classes:

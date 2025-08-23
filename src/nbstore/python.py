@@ -54,7 +54,12 @@ def _split_indent(text: str) -> Iterator[str]:
     yield textwrap.dedent(text)
 
 
-def _iter(text: str, pattern: re.Pattern, *, dedent: bool = False) -> Iterator[str]:
+def _iter(
+    text: str,
+    pattern: re.Pattern[str],
+    *,
+    dedent: bool = False,
+) -> Iterator[str]:
     """Iterate through text blocks separated by pattern matches.
 
     Splits the text at lines matching the pattern and yields each block.
@@ -151,11 +156,11 @@ def new_notebook(text: str) -> NotebookNode:
     Returns:
         NotebookNode: The created notebook.
     """
-    node = nbformat.v4.new_notebook()
+    node = nbformat.v4.new_notebook()  # pyright: ignore[reportUnknownMemberType]
     node["metadata"]["language_info"] = {"name": "python"}
 
     for source in parse(text):
-        cell = nbformat.v4.new_code_cell(source)
+        cell = nbformat.v4.new_code_cell(source)  # pyright: ignore[reportUnknownMemberType]
         node["cells"].append(cell)
 
     return node

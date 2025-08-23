@@ -102,7 +102,7 @@ def get_source(
     raise NotImplementedError
 
 
-def get_outputs(nb: NotebookNode, identifier: str) -> list:
+def get_outputs(nb: NotebookNode, identifier: str) -> list[dict[str, Any]]:
     """Get the outputs of a cell by its identifier.
 
     Args:
@@ -115,7 +115,10 @@ def get_outputs(nb: NotebookNode, identifier: str) -> list:
     return get_cell(nb, identifier).get("outputs", [])
 
 
-def _get_data_by_type(outputs: list, output_type: str) -> dict[str, str] | None:
+def _get_data_by_type(
+    outputs: list[dict[str, Any]],
+    output_type: str,
+) -> dict[str, str] | None:
     """Get data from outputs by output type.
 
     Internal helper function to extract data from outputs based on the output type.
@@ -207,7 +210,7 @@ def _convert_pgf(text: str) -> str:
         str: The converted PGF text with file references.
     """
 
-    def replace(match: re.Match) -> str:
+    def replace(match: re.Match[str]) -> str:
         ext = match.group("ext")
         data = base64.b64decode(match.group("b64"))
 
@@ -215,7 +218,7 @@ def _convert_pgf(text: str) -> str:
             tmp.write(data)
             path = Path(tmp.name)
 
-        atexit.register(lambda p=path: p.unlink(missing_ok=True))
+        atexit.register(lambda p=path: p.unlink(missing_ok=True))  # pyright: ignore[reportUnknownArgumentType, reportUnknownLambdaType, reportUnknownMemberType]
 
         return f"{{{path.absolute()}}}"
 
@@ -288,7 +291,7 @@ def new_code_cell(identifier: str, source: str) -> NotebookNode:
     if not source.startswith("#") or f"#{identifier}" not in source.split("\n", 1)[0]:
         source = f"# #{identifier}\n{source}"
 
-    return nbformat.v4.new_code_cell(source)
+    return nbformat.v4.new_code_cell(source)  # pyright: ignore[reportUnknownMemberType]
 
 
 def execute(
